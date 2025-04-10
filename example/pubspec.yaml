@@ -1,0 +1,18 @@
+name: helper_animation_example
+description: Demo app for helper_animation package
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  get: ^4.6.6  # ← hanya dipakai di playground
+
+  helper_animation:  # ← harus sama dengan nama pubspec utama
+    path: ../         # ← menunjuk ke root project (library utama)
+
+flutter:
+  uses-material-design: true
