@@ -36,7 +36,7 @@ class EffectAnimation extends StatefulWidget {
   final EffectAnimationController? controller; // Controller baru
   final bool touchEnabled; // Flag untuk mengaktifkan/menonaktifkan respons tap
 
-  const EffectAnimation({
+   EffectAnimation({
     Key? key,
     required this.child,
     this.effectColor = const Color(0xFF8BB3C5),

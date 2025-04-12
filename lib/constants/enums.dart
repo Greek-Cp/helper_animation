@@ -14,6 +14,15 @@ enum AnimationPosition {
 }
 
 enum AnimationType {
+  // Tipe baru yang ditambahkan
+  shapeExplode,
+  shapeVortex,
+  shapePulse,
+  shapeWave,
+  shapeMorph,
+  radialBurst,
+  bounceOutward,
+  spiralOutward,
   radialFirework,
   firework,
   ripple,

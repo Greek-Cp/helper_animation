@@ -3247,7 +3247,7 @@ class MagicalFlowerAnimator implements EffectAnimator {
   double getOuterPadding() => math.max(petalWidth, petalLength) * 2.2;
 }
 
-/// Magical orbit dots animator dengan efek berkilau dan estetik.
+/// Orbit dots animator dengan dot polos sederhana.
 class MagicalOrbitDotsAnimator implements EffectAnimator {
   // ---------- orbit settings ----------
   final int orbitCount; // jumlah orbit
@@ -3281,17 +3281,17 @@ class MagicalOrbitDotsAnimator implements EffectAnimator {
     this.dotSize = 6.0,
     this.reverseAlternate = true,
     //
-    this.enableGlowEffect = true,
-    this.enableDotTrails = true,
-    this.enableSparkles = true,
-    this.sparkleCount = 12,
+    this.enableGlowEffect = false, // dimatikan
+    this.enableDotTrails = true, // trail diaktifkan
+    this.enableSparkles = false, // dimatikan
+    this.sparkleCount = 0, // tidak ada sparkle
     //
     this.orbitSpeeds = const [0.8, 0.5, 0.3], // default speeds for 3 orbits
-    this.pulseFactor = 0.2,
+    this.pulseFactor = 0.0, // tidak ada pulsasi
     //
-    this.enableHueTilt = true,
-    this.hueTiltRange = 0.6,
-    this.saturationBoost = 1.2,
+    this.enableHueTilt = false, // dimatikan
+    this.hueTiltRange = 0.0,
+    this.saturationBoost = 1.0,
     this.centerGlowColor = const Color(0xFF55BBAA),
   });
 
@@ -3314,44 +3314,6 @@ class MagicalOrbitDotsAnimator implements EffectAnimator {
         : progress > 0.85
             ? (1 - (progress - 0.85) / 0.15)
             : 1.0;
-
-    // ----- Draw center glow if enabled -----
-    if (enableGlowEffect) {
-      final centerRadius = baseRadius * orbitSpacing * 0.6 * radiusMultiplier;
-
-      // Pulsing effect for the glow
-      final pulsePhase = math.sin(progress * 5) * 0.2 + 0.8;
-      final glowRadius = centerRadius * pulsePhase;
-
-      final glowPaint = Paint()
-        ..shader = ui.Gradient.radial(
-          c,
-          glowRadius * 1.5,
-          [
-            centerGlowColor.withOpacity(0.7 * opacity),
-            centerGlowColor.withOpacity(0.4 * opacity),
-            centerGlowColor.withOpacity(0.0),
-          ],
-          [0.0, 0.5, 1.0],
-        );
-
-      canvas.drawCircle(c, glowRadius * 1.5, glowPaint);
-
-      // Inner brighter core
-      final corePaint = Paint()
-        ..shader = ui.Gradient.radial(
-          c,
-          glowRadius * 0.8,
-          [
-            Colors.white.withOpacity(0.8 * opacity),
-            centerGlowColor.withOpacity(0.6 * opacity),
-            centerGlowColor.withOpacity(0.4 * opacity),
-          ],
-          [0.0, 0.4, 1.0],
-        );
-
-      canvas.drawCircle(c, glowRadius * 0.8, corePaint);
-    }
 
     // ----- Draw orbiting dots -----
     for (int orbitIndex = 0; orbitIndex < orbitCount; orbitIndex++) {
@@ -3399,92 +3361,24 @@ class MagicalOrbitDotsAnimator implements EffectAnimator {
 
             if (trailOpacity <= 0 || trailSize <= 0) continue;
 
-            // Trail dot color with slight hue shift
-            Color trailColor = color;
-            if (enableHueTilt) {
-              final hsl = HSLColor.fromColor(color);
-              final hueShift = ((orbitIndex * dotsPerOrbit + dotIndex) /
-                      (orbitCount * dotsPerOrbit)) *
-                  360 *
-                  hueTiltRange;
-              trailColor = hsl
-                  .withHue((hsl.hue + hueShift - (trailFactor * 15)) %
-                      360) // Slight shift for trail
-                  .withSaturation(
-                      (hsl.saturation * saturationBoost).clamp(0.0, 1.0))
-                  .toColor();
-            }
-
-            final trailPaint = Paint()
-              ..color = trailColor.withOpacity(trailOpacity)
-              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+            // Jejak dengan warna polos (tanpa efek perubahan warna)
+            final trailPaint = Paint()..color = color.withOpacity(trailOpacity);
 
             canvas.drawCircle(trailPos, trailSize, trailPaint);
           }
         }
 
-        // ----- Draw main dot -----
-        // Pulse effect - dots grow and shrink slightly
-        final pulsePhase =
-            math.sin((progress * 7) + (dotIndex * 0.7) + (orbitIndex * 1.5)) *
-                    pulseFactor +
-                1.0;
-        final dotRadius = dotSize * radiusMultiplier * pulsePhase;
+        // ----- Draw main dot dengan tampilan polos -----
+        final dotRadius = dotSize * radiusMultiplier;
 
-        // Dot color with hue variation based on position
-        Color dotColor = color;
-        if (enableHueTilt) {
-          final hsl = HSLColor.fromColor(color);
-          final hueShift = ((orbitIndex * dotsPerOrbit + dotIndex) /
-                  (orbitCount * dotsPerOrbit)) *
-              360 *
-              hueTiltRange;
-          dotColor = hsl
-              .withHue((hsl.hue + hueShift) % 360)
-              .withSaturation(
-                  (hsl.saturation * saturationBoost).clamp(0.0, 1.0))
-              .toColor();
-        }
-        dotColor = dotColor.withOpacity(opacity);
-
-        // The main dot with glow effect
-        final dotGlowPaint = Paint()
-          ..color = dotColor.withOpacity(0.4)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
-
-        canvas.drawCircle(dotPos, dotRadius * 1.4, dotGlowPaint);
-
-        // Brighter core
-        final dotPaint = Paint()..color = dotColor;
+        // Hanya menggambar lingkaran solid polos
+        final dotPaint = Paint()..color = color.withOpacity(opacity);
         canvas.drawCircle(dotPos, dotRadius, dotPaint);
-
-        // Highlight spot
-        final highlightPaint = Paint()
-          ..color = Colors.white.withOpacity(0.8 * opacity);
-        final highlightOffset =
-            Offset(-dotRadius * 0.2, -dotRadius * 0.2); // Top-left highlight
-        canvas.drawCircle(
-            dotPos + highlightOffset, dotRadius * 0.3, highlightPaint);
       }
-    }
-
-    // ----- Draw random sparkles if enabled -----
-    if (enableSparkles) {
-      _drawSparkles(
-        canvas: canvas,
-        center: c,
-        radius: baseRadius *
-            orbitBaseRadius *
-            (1 + orbitSpacing * (orbitCount - 1)) *
-            radiusMultiplier,
-        count: sparkleCount,
-        baseColor: color.withOpacity(opacity * 0.8),
-        progress: progress,
-      );
     }
   }
 
-  // Method to draw sparkles
+  // Method to draw sparkles (tidak dipanggil karena enableSparkles = false)
   void _drawSparkles({
     required Canvas canvas,
     required Offset center,
@@ -3493,104 +3387,19 @@ class MagicalOrbitDotsAnimator implements EffectAnimator {
     required Color baseColor,
     required double progress,
   }) {
-    final random = math.Random(42); // Fixed seed for consistent positions
-
-    for (int i = 0; i < count; i++) {
-      // Sparkle position - random placement around orbits
-      final angle = random.nextDouble() * 2 * math.pi;
-      final distance = radius * (0.3 + random.nextDouble() * 0.9);
-
-      // Add floating effect
-      final floatOffset = math.sin(progress * 4 + i * 1.2) * (radius * 0.03);
-      final floatAngle =
-          angle + random.nextDouble() * math.pi; // Random float direction
-
-      final sparklePos = center +
-          Offset(math.cos(angle), math.sin(angle)) * distance +
-          Offset(math.cos(floatAngle), math.sin(floatAngle)) * floatOffset;
-
-      // Twinkling size effect
-      final sparklePhase = (progress * 3 + i * 0.4) % 1.0;
-      final sizeFactor =
-          0.2 + math.pow(math.sin(sparklePhase * math.pi), 2) * 0.8;
-      final size = (2 + random.nextDouble() * 2) * sizeFactor;
-
-      if (sizeFactor <= 0.2) continue; // Skip almost invisible sparkles
-
-      // Sparkle color with variation
-      final hue =
-          (HSLColor.fromColor(baseColor).hue + random.nextDouble() * 60) % 360;
-      final sparkleColor = HSLColor.fromAHSL(
-        baseColor.opacity * sizeFactor,
-        hue,
-        0.5,
-        0.7,
-      ).toColor();
-
-      // Draw sparkle as a simple 4-point star or a circle
-      if (random.nextBool()) {
-        _drawStarSparkle(canvas, sparklePos, size, sparkleColor);
-      } else {
-        _drawCircleSparkle(canvas, sparklePos, size * 0.7, sparkleColor);
-      }
-    }
+    // Metode ini masih dipertahankan tapi tidak akan dipanggil
   }
 
-  // Draw a star-shaped sparkle
+  // Draw a star-shaped sparkle (tidak dipanggil)
   void _drawStarSparkle(
       Canvas canvas, Offset position, double size, Color color) {
-    final outerRadius = size;
-    final innerRadius = size * 0.4;
-    final points = 4; // 4-point star
-
-    final path = Path();
-
-    for (int i = 0; i < points * 2; i++) {
-      final angle = (i / (points * 2)) * 2 * math.pi;
-      final radius = i % 2 == 0 ? outerRadius : innerRadius;
-
-      final x = position.dx + math.cos(angle) * radius;
-      final y = position.dy + math.sin(angle) * radius;
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    path.close();
-
-    // Glow effect
-    final glowPaint = Paint()
-      ..color = color.withOpacity(0.6)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
-
-    canvas.drawPath(path, glowPaint);
-
-    // Core
-    final corePaint = Paint()..color = Colors.white.withOpacity(0.8);
-    canvas.drawCircle(position, size * 0.2, corePaint);
+    // Metode ini masih dipertahankan tapi tidak akan dipanggil
   }
 
-  // Draw a circular sparkle
+  // Draw a circular sparkle (tidak dipanggil)
   void _drawCircleSparkle(
       Canvas canvas, Offset position, double size, Color color) {
-    // Glow
-    final glowPaint = Paint()
-      ..color = color.withOpacity(0.6)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
-
-    canvas.drawCircle(position, size * 1.3, glowPaint);
-
-    // Main circle
-    final circlePaint = Paint()..color = color;
-    canvas.drawCircle(position, size, circlePaint);
-
-    // Highlight
-    final highlightPaint = Paint()..color = Colors.white.withOpacity(0.8);
-    canvas.drawCircle(position + Offset(-size * 0.2, -size * 0.2), size * 0.3,
-        highlightPaint);
+    // Metode ini masih dipertahankan tapi tidak akan dipanggil
   }
 
   // overrides
@@ -3635,55 +3444,1469 @@ class MagicalOrbitDotsAnimator implements EffectAnimator {
       orbitBaseRadius * 100 + (orbitSpacing * orbitCount * 100) + dotSize * 2;
 }
 
+// 1. Radial Burst Animator
+class RadialBurstAnimator implements EffectAnimator {
+  final int particleCount;
+  final double particleRadius;
+  final double tailFactor;
+  final double maxRadiusScale;
+  final bool useUniformAngles;
+
+  // Opsi warna
+  final bool enableColorShift;
+  final double colorShiftRange;
+  final double saturationBoost;
+
+  // Fase animasi
+  static const double _growPhaseEnd = 0.2; // Fase partikel membesar
+  static const double _expandPhaseEnd = 0.8; // Fase partikel bergerak keluar
+
+  RadialBurstAnimator({
+    this.particleCount = 20,
+    this.particleRadius = 5,
+    this.tailFactor = 2.5,
+    this.maxRadiusScale = 0.8,
+    this.useUniformAngles = true,
+    this.enableColorShift = false,
+    this.colorShiftRange = 0.4,
+    this.saturationBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42); // Seed tetap untuk konsistensi
+    final minSide = math.min(size.width, size.height);
+    final maxRadius = minSide * maxRadiusScale * radiusMultiplier;
+
+    // Generate sudut partikel
+    final angles = List<double>.generate(
+      particleCount,
+      (i) => useUniformAngles
+          ? (i / particleCount) * 2 * math.pi
+          : rnd.nextDouble() * 2 * math.pi,
+    );
+
+    // Gambar setiap partikel
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.02; // Delay bertahap
+      final rawT = progress - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+      final angle = angles[i];
+
+      // Posisi radial - dari dalam ke luar
+      double dist;
+      if (t < _growPhaseEnd) {
+        // Fase awal - mulai dari tengah dengan cepat
+        final tt = t / _growPhaseEnd;
+        dist = maxRadius * _easeOutExpo(tt) * 0.3; // Gerakan awal cepat
+      } else if (t < _expandPhaseEnd) {
+        // Fase ekspansi - bergerak keluar dari 30% hingga 100%
+        final tt = (t - _growPhaseEnd) / (_expandPhaseEnd - _growPhaseEnd);
+        dist = maxRadius * (0.3 + (0.7 * _easeOutQuad(tt)));
+      } else {
+        // Fase akhir - tetap pada posisi
+        dist = maxRadius;
+      }
+
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // Skala dan opasitas
+      double scale, opacity;
+      if (t < _growPhaseEnd) {
+        // Membesar cepat di awal
+        scale = _easeOutExpo(t / _growPhaseEnd);
+        opacity = scale;
+      } else if (t > _expandPhaseEnd) {
+        // Mengecil dan memudar di akhir
+        final tt = (t - _expandPhaseEnd) / (1 - _expandPhaseEnd);
+        scale = 1.0 - _easeInQuad(tt);
+        opacity = scale;
+      } else {
+        // Ukuran penuh pada fase ekspansi
+        scale = 1.0;
+        opacity = 1.0;
+      }
+
+      // Warna dengan color shift optional
+      Color particleColor = color;
+      if (enableColorShift) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * colorShiftRange;
+        particleColor = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      particleColor = particleColor.withOpacity(opacity);
+
+      // Gambar partikel dan ekornya
+      final rad = particleRadius * radiusMultiplier * scale;
+      canvas.drawCircle(pos, rad, Paint()..color = particleColor);
+
+      // Gambar ekor partikel (mengarah ke pusat)
+      if (tailFactor > 0) {
+        final tailAngle =
+            angle + math.pi; // Ekor mengarah ke arah yang berlawanan
+        final tailLen = rad * tailFactor;
+        final tailEnd =
+            pos + Offset(math.cos(tailAngle), math.sin(tailAngle)) * tailLen;
+
+        canvas.drawLine(
+            pos,
+            tailEnd,
+            Paint()
+              ..color = particleColor
+              ..strokeWidth = rad * 0.7
+              ..strokeCap = StrokeCap.round);
+      }
+    }
+  }
+
+  // Fungsi easing
+  double _easeOutExpo(double t) {
+    return t == 1.0 ? 1.0 : 1 - math.pow(2, -10 * t).toDouble();
+  }
+
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+
+  double _easeInQuad(double t) => t * t;
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! RadialBurstAnimator ||
+      old.particleCount != particleCount ||
+      old.particleRadius != particleRadius ||
+      old.tailFactor != tailFactor ||
+      old.maxRadiusScale != maxRadiusScale ||
+      old.useUniformAngles != useUniformAngles ||
+      old.enableColorShift != enableColorShift ||
+      old.colorShiftRange != colorShiftRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+
+  @override
+  double getOuterPadding() =>
+      maxRadiusScale * 100 + particleRadius * tailFactor;
+}
+
+// 2. Perimeter Spawn Animator
+class PerimeterSpawnAnimator implements EffectAnimator {
+  final int particleCount;
+  final double particleRadius;
+  final double tailFactor;
+  final double maxRadiusScale;
+  final bool useUniformAngles;
+
+  // Opsi warna
+  final bool enableColorShift;
+  final double colorShiftRange;
+  final double saturationBoost;
+
+  // Fase animasi
+  static const double _spawnPhaseEnd = 0.25; // Partikel muncul di perimeter
+  static const double _expandPhaseEnd = 0.75; // Partikel bergerak keluar
+
+  PerimeterSpawnAnimator({
+    this.particleCount = 20,
+    this.particleRadius = 5,
+    this.tailFactor = 3.0,
+    this.maxRadiusScale = 0.9,
+    this.useUniformAngles = true,
+    this.enableColorShift = false,
+    this.colorShiftRange = 0.5,
+    this.saturationBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+    final minSide = math.min(size.width, size.height);
+
+    // Radius untuk perimeter (border widget) dan maksimum
+    final perimeterRadius =
+        minSide * 0.25 * radiusMultiplier; // Radius perimeter widget
+    final maxRadius = minSide * maxRadiusScale * radiusMultiplier;
+
+    // Generate sudut partikel
+    final angles = List<double>.generate(
+      particleCount,
+      (i) => useUniformAngles
+          ? (i / particleCount) * 2 * math.pi
+          : rnd.nextDouble() * 2 * math.pi,
+    );
+
+    // Gambar setiap partikel
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.03; // Delay lebih lambat
+      final rawT = progress - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+      final angle = angles[i];
+
+      // Posisi radial - dari perimeter ke luar
+      double dist;
+      if (t < _spawnPhaseEnd) {
+        // Fase spawn - partikel muncul di perimeter
+        final tt = t / _spawnPhaseEnd;
+        dist = perimeterRadius; // Tetap di perimeter
+      } else if (t < _expandPhaseEnd) {
+        // Fase ekspansi - bergerak dari perimeter ke radius maksimum
+        final tt = (t - _spawnPhaseEnd) / (_expandPhaseEnd - _spawnPhaseEnd);
+        dist =
+            perimeterRadius + (maxRadius - perimeterRadius) * _easeOutQuint(tt);
+      } else {
+        // Fase akhir - dipertahankan kemudian menghilang
+        dist = maxRadius;
+      }
+
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // Skala dan opasitas
+      double scale, opacity;
+      if (t < _spawnPhaseEnd) {
+        // Membesar di perimeter
+        scale = _easeOutBack(t / _spawnPhaseEnd);
+        opacity = scale;
+      } else if (t > _expandPhaseEnd) {
+        // Memudar di akhir
+        final tt = (t - _expandPhaseEnd) / (1 - _expandPhaseEnd);
+        scale = 1.0 - _easeInCubic(tt);
+        opacity = scale;
+      } else {
+        // Fase ekspansi dengan ukuran penuh
+        scale = 1.0;
+        opacity = 1.0;
+      }
+
+      // Warna dengan color shift optional
+      Color particleColor = color;
+      if (enableColorShift) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * colorShiftRange;
+        particleColor = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      particleColor = particleColor.withOpacity(opacity);
+
+      // Gambar partikel
+      final rad = particleRadius * radiusMultiplier * scale;
+      canvas.drawCircle(pos, rad, Paint()..color = particleColor);
+
+      // Gambar ekor (mengarah radial ke luar)
+      if (tailFactor > 0) {
+        final tailLen = rad * tailFactor;
+        final tailEnd =
+            pos + Offset(math.cos(angle), math.sin(angle)) * tailLen;
+
+        canvas.drawLine(
+            pos,
+            tailEnd,
+            Paint()
+              ..color = particleColor
+              ..strokeWidth = rad * 0.7
+              ..strokeCap = StrokeCap.round);
+      }
+    }
+  }
+
+  // Fungsi easing
+  double _easeOutQuint(double t) {
+    return 1 - math.pow(1 - t, 5).toDouble();
+  }
+
+  double _easeOutBack(double t) {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * math.pow(t - 1, 3) + c1 * math.pow(t - 1, 2);
+  }
+
+  double _easeInCubic(double t) {
+    return t * t * t;
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterSpawnAnimator ||
+      old.particleCount != particleCount ||
+      old.particleRadius != particleRadius ||
+      old.tailFactor != tailFactor ||
+      old.maxRadiusScale != maxRadiusScale ||
+      old.useUniformAngles != useUniformAngles ||
+      old.enableColorShift != enableColorShift ||
+      old.colorShiftRange != colorShiftRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+
+  @override
+  double getOuterPadding() =>
+      maxRadiusScale * 100 + particleRadius * tailFactor;
+}
+
+// 3. Bounce Outward Animator
+class BounceOutwardAnimator implements EffectAnimator {
+  final int particleCount;
+  final double particleRadius;
+  final double tailFactor;
+  final double maxRadiusScale;
+  final bool useUniformAngles;
+
+  // Bounce parameters
+  final int bounceCount;
+
+  // Opsi warna
+  final bool enableColorShift;
+  final double colorShiftRange;
+  final double saturationBoost;
+
+  BounceOutwardAnimator({
+    this.particleCount = 20,
+    this.particleRadius = 5,
+    this.tailFactor = 2.0,
+    this.maxRadiusScale = 0.8,
+    this.useUniformAngles = true,
+    this.bounceCount = 2,
+    this.enableColorShift = false,
+    this.colorShiftRange = 0.4,
+    this.saturationBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+    final minSide = math.min(size.width, size.height);
+    final maxRadius = minSide * maxRadiusScale * radiusMultiplier;
+
+    // Generate sudut partikel
+    final angles = List<double>.generate(
+      particleCount,
+      (i) => useUniformAngles
+          ? (i / particleCount) * 2 * math.pi
+          : rnd.nextDouble() * 2 * math.pi,
+    );
+
+    // Gambar setiap partikel
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.015; // Delay lebih cepat untuk efek bounce
+      final rawT = progress - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+      final angle = angles[i];
+
+      // Bounce effect - gerakan keluar dengan bounce
+      final bounceProgress = t < 0.8 ? t / 0.8 : 1.0;
+      final dist = maxRadius * _easeOutBounce(bounceProgress);
+
+      // Tambahkan sedikit gerakan orbital
+      final orbitOffset =
+          math.sin(t * math.pi * 2 * bounceCount) * (maxRadius * 0.05);
+      final orbitAngle = angle + math.pi / 2; // Tegak lurus dengan arah radial
+
+      final orbitPos = Offset(math.cos(orbitAngle) * orbitOffset,
+          math.sin(orbitAngle) * orbitOffset);
+
+      final radialPos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+      final pos = radialPos + orbitPos;
+
+      // Skala dan opasitas
+      double scale, opacity;
+      if (t < 0.15) {
+        // Membesar cepat di awal
+        scale = _easeOutQuad(t / 0.15);
+        opacity = scale;
+      } else if (t > 0.85) {
+        // Memudar di akhir
+        final tt = (t - 0.85) / 0.15;
+        scale = 1.0 - _easeInQuad(tt);
+        opacity = scale;
+      } else {
+        // Ukuran penuh pada fase tengah
+        scale = 1.0;
+        opacity = 1.0;
+      }
+
+      // Warna dengan color shift optional
+      Color particleColor = color;
+      if (enableColorShift) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * colorShiftRange;
+        particleColor = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      particleColor = particleColor.withOpacity(opacity);
+
+      // Gambar partikel
+      final rad = particleRadius * radiusMultiplier * scale;
+      canvas.drawCircle(pos, rad, Paint()..color = particleColor);
+
+      // Gambar ekor (dengan arah yang mengikuti bounce)
+      if (tailFactor > 0) {
+        // Arah ekor berdasarkan arah dan kecepatan gerakan
+        final tailAngle =
+            angle - math.pi / 8 + (math.sin(t * 15) * math.pi / 6);
+        final tailLen = rad * tailFactor;
+        final tailEnd =
+            pos + Offset(math.cos(tailAngle), math.sin(tailAngle)) * -tailLen;
+
+        canvas.drawLine(
+            pos,
+            tailEnd,
+            Paint()
+              ..color = particleColor
+              ..strokeWidth = rad * 0.6
+              ..strokeCap = StrokeCap.round);
+      }
+    }
+  }
+
+  // Fungsi easing untuk bounce
+  double _easeOutBounce(double t) {
+    const n1 = 7.5625;
+    const d1 = 2.75;
+
+    if (t < 1 / d1) {
+      return n1 * t * t;
+    } else if (t < 2 / d1) {
+      t -= 1.5 / d1;
+      return n1 * t * t + 0.75;
+    } else if (t < 2.5 / d1) {
+      t -= 2.25 / d1;
+      return n1 * t * t + 0.9375;
+    } else {
+      t -= 2.625 / d1;
+      return n1 * t * t + 0.984375;
+    }
+  }
+
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+
+  double _easeInQuad(double t) => t * t;
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! BounceOutwardAnimator ||
+      old.particleCount != particleCount ||
+      old.particleRadius != particleRadius ||
+      old.tailFactor != tailFactor ||
+      old.maxRadiusScale != maxRadiusScale ||
+      old.useUniformAngles != useUniformAngles ||
+      old.bounceCount != bounceCount ||
+      old.enableColorShift != enableColorShift ||
+      old.colorShiftRange != colorShiftRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+
+  @override
+  double getOuterPadding() =>
+      maxRadiusScale * 100 + particleRadius * tailFactor;
+}
+
+// 4. Spiral Outward Animator
+class SpiralOutwardAnimator implements EffectAnimator {
+  final int particleCount;
+  final double particleRadius;
+  final double tailFactor;
+  final double maxRadiusScale;
+  final bool useUniformAngles;
+
+  // Spiral parameters
+  final double spiralTightness;
+  final bool clockwise;
+
+  // Opsi warna
+  final bool enableColorShift;
+  final double colorShiftRange;
+  final double saturationBoost;
+
+  SpiralOutwardAnimator({
+    this.particleCount = 20,
+    this.particleRadius = 5,
+    this.tailFactor = 2.5,
+    this.maxRadiusScale = 0.85,
+    this.useUniformAngles = true,
+    this.spiralTightness = 3.0, // Berapa banyak putaran spiral
+    this.clockwise = true,
+    this.enableColorShift = false,
+    this.colorShiftRange = 0.6,
+    this.saturationBoost = 1.3,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+    final minSide = math.min(size.width, size.height);
+    final maxRadius = minSide * maxRadiusScale * radiusMultiplier;
+
+    // Arah putaran
+    final direction = clockwise ? 1.0 : -1.0;
+
+    // Generate parameter awal untuk setiap partikel
+    final startAngles = List<double>.generate(
+      particleCount,
+      (i) => useUniformAngles
+          ? (i / particleCount) * 2 * math.pi
+          : rnd.nextDouble() * 2 * math.pi,
+    );
+
+    // Gambar setiap partikel
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.025;
+      final rawT = progress - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+      final startAngle = startAngles[i];
+
+      // Gerakan spiral
+      // - Radius meningkat dari 0 ke maxRadius
+      // - Sudut berputar beberapa kali (tergantung spiralTightness)
+      final radialProgress = t < 0.7 ? _easeOutCubic(t / 0.7) : 1.0;
+      final angularProgress = t < 0.85 ? t / 0.85 : 1.0;
+
+      final radius = maxRadius * radialProgress;
+      final rotationAngle =
+          direction * angularProgress * spiralTightness * 2 * math.pi;
+
+      final angle = startAngle + rotationAngle;
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * radius;
+
+      // Skala dan opasitas
+      double scale, opacity;
+      if (t < 0.1) {
+        // Membesar cepat di awal
+        scale = _easeOutQuad(t / 0.1);
+        opacity = scale;
+      } else if (t > 0.85) {
+        // Memudar di akhir
+        final tt = (t - 0.85) / 0.15;
+        scale = 1.0 - _easeInQuad(tt);
+        opacity = scale;
+      } else {
+        // Ukuran penuh pada fase spiral
+        scale = 1.0;
+        opacity = 1.0;
+      }
+
+      // Warna dengan color shift optional
+      Color particleColor = color;
+      if (enableColorShift) {
+        final hsl = HSLColor.fromColor(color);
+        // Pergeseran warna berdasarkan sudut dan jarak
+        final angleShift = (angle / (2 * math.pi)) * colorShiftRange;
+        final distShift = (radius / maxRadius) * (1 - colorShiftRange);
+        final shift = ((angleShift + distShift) * 360) % 360;
+
+        particleColor = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      particleColor = particleColor.withOpacity(opacity);
+
+      // Gambar partikel
+      final rad = particleRadius * radiusMultiplier * scale;
+      canvas.drawCircle(pos, rad, Paint()..color = particleColor);
+
+      // Gambar ekor (mengikuti arah spiral)
+      if (tailFactor > 0) {
+        // Tangent ke spiral
+        final tangentAngle = angle - math.pi / 2 * direction;
+        final tailLen = rad * tailFactor;
+        final tailEnd = pos +
+            Offset(math.cos(tangentAngle), math.sin(tangentAngle)) * tailLen;
+
+        canvas.drawLine(
+            pos,
+            tailEnd,
+            Paint()
+              ..color = particleColor
+              ..strokeWidth = rad * 0.7
+              ..strokeCap = StrokeCap.round);
+      }
+    }
+  }
+
+  // Fungsi easing
+  double _easeOutCubic(double t) {
+    return 1 - math.pow(1 - t, 3).toDouble();
+  }
+
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+
+  double _easeInQuad(double t) => t * t;
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! SpiralOutwardAnimator ||
+      old.particleCount != particleCount ||
+      old.particleRadius != particleRadius ||
+      old.tailFactor != tailFactor ||
+      old.maxRadiusScale != maxRadiusScale ||
+      old.useUniformAngles != useUniformAngles ||
+      old.spiralTightness != spiralTightness ||
+      old.clockwise != clockwise ||
+      old.enableColorShift != enableColorShift ||
+      old.colorShiftRange != colorShiftRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+
+  @override
+  double getOuterPadding() =>
+      maxRadiusScale * 100 + particleRadius * tailFactor;
+}
+
+// 1. ShapeExplodeAnimator - Kebalikan dari implode
+class ShapeExplodeAnimator implements EffectAnimator {
+  // ───── visual ─────
+  final int particleCount;
+  final double circleRadius;
+  final double tailFactor;
+  final double maxScale; // radius akhir = maxScale * sisi terpendek
+  final bool useUniformAngle;
+  // ───── warna ─────
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  ShapeExplodeAnimator({
+    this.particleCount = 18,
+    this.circleRadius = 6,
+    this.tailFactor = 3,
+    this.maxScale = .75,
+    this.useUniformAngle = true,
+    this.enableHueTilt = false,
+    this.hueTiltRange = .35,
+    this.saturationBoost = 1.1,
+  });
+
+  // batas fase
+  static const double _appearEnd = .15;
+  static const double _expandEnd = .75;
+
+  @override
+  void paint(Canvas cv, Size size, double p, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+    final minSide = math.min(size.width, size.height);
+
+    final maxRadius = minSide * maxScale * radiusMultiplier;
+
+    // sudut tetap
+    final angles = List<double>.generate(
+      particleCount,
+      (i) => useUniformAngle
+          ? (i / particleCount) * 2 * math.pi
+          : rnd.nextDouble() * 2 * math.pi,
+    );
+
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.02;
+      final rawT = p - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+      final angle = angles[i];
+
+      // ── posisi radial ──
+      double dist;
+      if (t < _appearEnd) {
+        final tt = t / _appearEnd; // 0‑1
+        dist = maxRadius * _easeOutQuad(tt) * 0.15; // mulai dari dekat pusat
+      } else if (t < _expandEnd) {
+        final tt = (t - _appearEnd) / (_expandEnd - _appearEnd);
+        dist =
+            maxRadius * (0.15 + 0.85 * _easeOutBack(tt)); // mengembang keluar
+      } else {
+        final tt = (t - _expandEnd) / (1 - _expandEnd);
+        dist = maxRadius; // tetap di luar
+      }
+
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // ── skala & opasitas ──
+      final scale = t < _appearEnd
+          ? t / _appearEnd
+          : t > _expandEnd
+              ? (1 - t) / (1 - _expandEnd)
+              : 1.0;
+
+      final opacity = scale;
+
+      // ── warna ──
+      Color col = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
+        col = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+            .toColor();
+      }
+      col = col.withOpacity(opacity.toDouble());
+
+      // ── gambar ──
+      final rad = circleRadius * radiusMultiplier * scale;
+      cv.drawCircle(pos, rad, Paint()..color = col);
+
+      final tailLen = rad * tailFactor;
+      final tailEnd = pos -
+          Offset(math.cos(angle), math.sin(angle)) * tailLen; // ekor ke dalam
+      cv.drawLine(
+          pos,
+          tailEnd,
+          Paint()
+            ..color = col
+            ..strokeWidth = rad * .8
+            ..strokeCap = StrokeCap.round);
+    }
+  }
+
+  // ───── easing lokal ─────
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+  double _easeOutBack(double t) {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * math.pow(t - 1, 3) + c1 * math.pow(t - 1, 2);
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! ShapeExplodeAnimator ||
+      old.particleCount != particleCount ||
+      old.circleRadius != circleRadius ||
+      old.tailFactor != tailFactor ||
+      old.maxScale != maxScale ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+  @override
+  double getOuterPadding() => maxScale * 100 + circleRadius * tailFactor;
+}
+
+// 2. ShapeVortexAnimator - Efek pusaran
+class ShapeVortexAnimator implements EffectAnimator {
+  // ───── visual ─────
+  final int particleCount;
+  final double circleRadius;
+  final double tailFactor;
+  final double maxScale; // radius maksimum = maxScale * sisi terpendek
+  final double rotationFactor; // faktor kecepatan rotasi
+  // ───── warna ─────
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  ShapeVortexAnimator({
+    this.particleCount = 24,
+    this.circleRadius = 5,
+    this.tailFactor = 2.5,
+    this.maxScale = .6,
+    this.rotationFactor = 2.0,
+    this.enableHueTilt = false,
+    this.hueTiltRange = .5,
+    this.saturationBoost = 1.2,
+  });
+
+  // batas fase
+  static const double _appearEnd = .2;
+  static const double _vortexEnd = .8;
+
+  @override
+  void paint(Canvas cv, Size size, double p, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+    final minSide = math.min(size.width, size.height);
+
+    final maxRadius = minSide * maxScale * radiusMultiplier;
+
+    // sudut awal
+    final initialAngles = List<double>.generate(
+      particleCount,
+      (i) => (i / particleCount) * 2 * math.pi,
+    );
+
+    // jarak awal (spiral)
+    final initialDistances = List<double>.generate(
+      particleCount,
+      (i) => maxRadius * (0.2 + (i / particleCount) * 0.8),
+    );
+
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.03;
+      final rawT = p - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+      final initialAngle = initialAngles[i];
+      final initialDist = initialDistances[i];
+
+      // ── rotasi tambahan ──
+      final rotationAmount = rotationFactor * 2 * math.pi * t;
+      final angle = initialAngle + rotationAmount;
+
+      // ── posisi radial ──
+      double dist;
+      if (t < _appearEnd) {
+        final tt = t / _appearEnd;
+        dist = initialDist * tt; // dari 0 ke jarak awal
+      } else if (t < _vortexEnd) {
+        final tt = (t - _appearEnd) / (_vortexEnd - _appearEnd);
+        dist = initialDist * (1 - _easeInQuad(tt) * 0.9); // spiral ke dalam
+      } else {
+        final tt = (t - _vortexEnd) / (1 - _vortexEnd);
+        dist = initialDist * 0.1 * (1 - tt); // menghilang ke pusat
+      }
+
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // ── skala & opasitas ──
+      final scale = t < _appearEnd
+          ? _easeInOutQuad(t / _appearEnd)
+          : t > _vortexEnd
+              ? (1 - t) / (1 - _vortexEnd)
+              : 1.0;
+
+      final opacity = t < _appearEnd
+          ? _easeInQuad(t / _appearEnd)
+          : t > _vortexEnd
+              ? _easeOutQuad((1 - t) / (1 - _vortexEnd))
+              : 1.0;
+
+      // ── warna ──
+      Color col = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
+        col = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+            .toColor();
+      }
+      col = col.withOpacity(opacity.toDouble());
+
+      // ── gambar ──
+      final rad = circleRadius * radiusMultiplier * scale;
+      cv.drawCircle(pos, rad, Paint()..color = col);
+
+      // Ekor mengikuti arah spiral
+      final tangentAngle = angle + math.pi / 2; // tegak lurus jari-jari
+      final tailLen = rad * tailFactor;
+      final tailEnd = pos -
+          Offset(math.cos(tangentAngle), math.sin(tangentAngle)) * tailLen;
+      cv.drawLine(
+          pos,
+          tailEnd,
+          Paint()
+            ..color = col
+            ..strokeWidth = rad * .7
+            ..strokeCap = StrokeCap.round);
+    }
+  }
+
+  // ───── easing lokal ─────
+  double _easeInQuad(double t) => t * t;
+  double _easeInOutQuad(double t) =>
+      t < 0.5 ? 2 * t * t : 1 - math.pow(-2 * t + 2, 2) / 2;
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! ShapeVortexAnimator ||
+      old.particleCount != particleCount ||
+      old.circleRadius != circleRadius ||
+      old.tailFactor != tailFactor ||
+      old.maxScale != maxScale ||
+      old.rotationFactor != rotationFactor ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+  @override
+  double getOuterPadding() => maxScale * 100 + circleRadius * tailFactor;
+}
+
+// 3. ShapePulseAnimator - Efek denyut
+class ShapePulseAnimator implements EffectAnimator {
+  // ───── visual ─────
+  final int particleCount;
+  final double circleRadius;
+  final double maxScale; // radius maksimum = maxScale * sisi terpendek
+  final int pulseCount; // jumlah denyut dalam satu animasi
+  final bool useUniformAngle;
+  // ───── warna ─────
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  ShapePulseAnimator({
+    this.particleCount = 18,
+    this.circleRadius = 5,
+    this.maxScale = .6,
+    this.pulseCount = 2,
+    this.useUniformAngle = true,
+    this.enableHueTilt = false,
+    this.hueTiltRange = .3,
+    this.saturationBoost = 1.1,
+  });
+
+  @override
+  void paint(Canvas cv, Size size, double p, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+    final minSide = math.min(size.width, size.height);
+
+    final maxRadius = minSide * maxScale * radiusMultiplier;
+
+    // sudut tetap
+    final angles = List<double>.generate(
+      particleCount,
+      (i) => useUniformAngle
+          ? (i / particleCount) * 2 * math.pi
+          : rnd.nextDouble() * 2 * math.pi,
+    );
+
+    for (var i = 0; i < particleCount; i++) {
+      final angle = angles[i];
+
+      // ── buat pulsa berulang menggunakan fungsi sin ──
+      // p dari 0-1 jadi kita butuh konversi untuk beberapa denyut
+      final pulseFactor =
+          math.sin(p * pulseCount * math.pi); // denyut antara 0 dan 1
+
+      // Skalakan amplitudo denyut dari 0.3 (minimal) ke 1.0 (maksimal)
+      final pulseAmplitude = 0.3 + 0.7 * pulseFactor.abs();
+
+      // Skala opasitas dari 0.4 (minimal) ke 1.0 (maksimal)
+      final pulseOpacity = 0.4 + 0.6 * pulseFactor.abs();
+
+      // fadeIn di awal, fadeOut di akhir
+      final fadeEffect = p < 0.2
+          ? p / 0.2
+          : p > 0.8
+              ? (1 - p) / 0.2
+              : 1.0;
+
+      final dist = maxRadius * pulseAmplitude;
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // ── warna ──
+      Color col = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
+        col = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+            .toColor();
+      }
+
+      // Opacity berdasarkan pulse dan fade effect
+      final opacity = pulseOpacity * fadeEffect;
+      col = col.withOpacity(opacity.toDouble());
+
+      // ── gambar ──
+      final rad = circleRadius * radiusMultiplier * pulseAmplitude;
+      cv.drawCircle(pos, rad, Paint()..color = col);
+    }
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! ShapePulseAnimator ||
+      old.particleCount != particleCount ||
+      old.circleRadius != circleRadius ||
+      old.maxScale != maxScale ||
+      old.pulseCount != pulseCount ||
+      old.useUniformAngle != useUniformAngle ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+  @override
+  double getOuterPadding() => maxScale * 100 + circleRadius;
+}
+
+// 4. ShapeWaveAnimator - Efek gelombang
+class ShapeWaveAnimator implements EffectAnimator {
+  // ───── visual ─────
+  final int particleCount;
+  final double circleRadius;
+  final double maxScale; // radius maksimum = maxScale * sisi terpendek
+  final double waveFactor; // faktor amplitudo gelombang
+  final int waveCount; // jumlah gelombang penuh
+  // ───── warna ─────
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  ShapeWaveAnimator({
+    this.particleCount = 36,
+    this.circleRadius = 4,
+    this.maxScale = .65,
+    this.waveFactor = 0.15,
+    this.waveCount = 3,
+    this.enableHueTilt = false,
+    this.hueTiltRange = .4,
+    this.saturationBoost = 1.15,
+  });
+
+  // batas fase
+  static const double _appearEnd = .15;
+  static const double _waveEnd = .85;
+
+  @override
+  void paint(Canvas cv, Size size, double p, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final minSide = math.min(size.width, size.height);
+
+    final baseRadius = minSide * maxScale * radiusMultiplier;
+
+    // Jarak antar partikel harus konsisten
+    final angleStep = 2 * math.pi / particleCount;
+
+    for (var i = 0; i < particleCount; i++) {
+      final angle = i * angleStep;
+
+      // ── posisi radial dengan efek gelombang ──
+      double dist;
+      if (p < _appearEnd) {
+        // Muncul dari pusat
+        final tt = p / _appearEnd;
+        dist = baseRadius * _easeOutCubic(tt) * 0.5;
+      } else if (p < _waveEnd) {
+        // Fase gelombang
+        final tt = (p - _appearEnd) / (_waveEnd - _appearEnd);
+
+        // Pergerakan dasar keluar
+        final baseExpansion = 0.5 + 0.5 * tt;
+
+        // Efek gelombang - gelombang bergerak dari dalam ke luar
+        final wavePhase = angle / (2 * math.pi) - tt * waveCount;
+        final waveEffect = math.sin(wavePhase * 2 * math.pi) * waveFactor;
+
+        dist = baseRadius * (baseExpansion + waveEffect);
+      } else {
+        // Menghilang
+        final tt = (p - _waveEnd) / (1 - _waveEnd);
+        final fadeOut = 1 - _easeInCubic(tt);
+
+        // Efek gelombang terakhir
+        final wavePhase = angle / (2 * math.pi) - _waveEnd * waveCount;
+        final waveEffect =
+            math.sin(wavePhase * 2 * math.pi) * waveFactor * fadeOut;
+
+        dist = baseRadius * (1.0 + waveEffect) * fadeOut;
+      }
+
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // ── skala & opasitas ──
+      double scale;
+      double opacity;
+
+      if (p < _appearEnd) {
+        scale = _easeOutQuad(p / _appearEnd);
+        opacity = _easeOutQuad(p / _appearEnd);
+      } else if (p < _waveEnd) {
+        // Sedikit variasi skala berdasarkan fase gelombang
+        final wavePhase = angle / (2 * math.pi) - p * waveCount;
+        final variation = 0.2 * math.sin(wavePhase * 2 * math.pi) + 0.8;
+        scale = variation;
+        opacity = 1.0;
+      } else {
+        scale = (1 - p) / (1 - _waveEnd);
+        opacity = (1 - p) / (1 - _waveEnd);
+      }
+
+      // ── warna ──
+      Color col = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        // Variasi warna berdasarkan fase gelombang
+        final wavePhase = angle / (2 * math.pi) - p * waveCount;
+        final shift = math.sin(wavePhase * 2 * math.pi) * 180 * hueTiltRange;
+        col = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+            .toColor();
+      }
+      col = col.withOpacity(opacity.toDouble());
+
+      // ── gambar ──
+      final rad = circleRadius * radiusMultiplier * scale;
+      cv.drawCircle(pos, rad, Paint()..color = col);
+    }
+  }
+
+  // ───── easing lokal ─────
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+  double _easeOutCubic(double t) => 1 - math.pow(1 - t, 3).toDouble();
+  double _easeInCubic(double t) => t * t * t;
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! ShapeWaveAnimator ||
+      old.particleCount != particleCount ||
+      old.circleRadius != circleRadius ||
+      old.maxScale != maxScale ||
+      old.waveFactor != waveFactor ||
+      old.waveCount != waveCount ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+  @override
+  double getOuterPadding() => maxScale * 100 * (1 + waveFactor) + circleRadius;
+}
+
+// 5. ShapeMorphAnimator - Transformasi bentuk
+class ShapeMorphAnimator implements EffectAnimator {
+  // ───── visual ─────
+  final int particleCount;
+  final double particleSize;
+  final double maxScale; // radius maksimum = maxScale * sisi terpendek
+  final ShapeType startShape;
+  final ShapeType endShape;
+  // ───── warna ─────
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  ShapeMorphAnimator({
+    this.particleCount = 24,
+    this.particleSize = 5,
+    this.maxScale = .65,
+    this.startShape = ShapeType.circle,
+    this.endShape = ShapeType.star,
+    this.enableHueTilt = false,
+    this.hueTiltRange = .3,
+    this.saturationBoost = 1.1,
+  });
+
+  // batas fase
+  static const double _appearEnd = .2;
+  static const double _morphEnd = .7;
+
+  @override
+  void paint(Canvas cv, Size size, double p, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final minSide = math.min(size.width, size.height);
+
+    final maxRadius = minSide * maxScale * radiusMultiplier;
+
+    // Jarak antar partikel harus konsisten
+    final angleStep = 2 * math.pi / particleCount;
+
+    for (var i = 0; i < particleCount; i++) {
+      final angle = i * angleStep;
+
+      // ── posisi radial ──
+      double dist;
+      if (p < _appearEnd) {
+        // Muncul dari pusat
+        final tt = p / _appearEnd;
+        dist = maxRadius * _easeOutQuad(tt);
+      } else if (p < _morphEnd) {
+        // Fase morph - sedikit gerakan pulsa
+        final tt = (p - _appearEnd) / (_morphEnd - _appearEnd);
+        final pulse = 0.05 * math.sin(tt * math.pi * 2);
+        dist = maxRadius * (1 + pulse);
+      } else {
+        // Menghilang
+        final tt = (p - _morphEnd) / (1 - _morphEnd);
+        dist = maxRadius * (1 - _easeInQuad(tt)); // menghilang ke pusat
+      }
+
+      final pos = c + Offset(math.cos(angle), math.sin(angle)) * dist;
+
+      // ── skala & opasitas ──
+      double scale;
+      double opacity;
+
+      if (p < _appearEnd) {
+        scale = _easeOutCubic(p / _appearEnd);
+        opacity = _easeOutCubic(p / _appearEnd);
+      } else if (p < _morphEnd) {
+        scale = 1.0;
+        opacity = 1.0;
+      } else {
+        scale = (1 - p) / (1 - _morphEnd);
+        opacity = (1 - p) / (1 - _morphEnd);
+      }
+
+      // ── warna ──
+      Color col = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
+        col = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+            .toColor();
+      }
+      col = col.withOpacity(opacity.toDouble());
+
+      // ── morph progress ──
+      double morphProgress;
+      if (p < _appearEnd) {
+        morphProgress = 0; // mulai dengan bentuk awal
+      } else if (p < _morphEnd) {
+        morphProgress = (p - _appearEnd) / (_morphEnd - _appearEnd);
+      } else {
+        morphProgress = 1; // akhiri dengan bentuk akhir
+      }
+
+      // ── gambar bentuk yang dimorph ──
+      final size = particleSize * radiusMultiplier * scale;
+      _drawMorphedShape(
+          cv, pos, size, startShape, endShape, morphProgress, col);
+    }
+  }
+
+  void _drawMorphedShape(Canvas cv, Offset pos, double size,
+      ShapeType startShape, ShapeType endShape, double progress, Color color) {
+    final paint = Paint()..color = color;
+
+    if (startShape == ShapeType.circle && endShape == ShapeType.square) {
+      // Morph lingkaran ke kotak
+      final cornerRadius = size * (1 - progress);
+      final rect =
+          Rect.fromCenter(center: pos, width: size * 2, height: size * 2);
+      cv.drawRRect(
+          RRect.fromRectAndRadius(rect, Radius.circular(cornerRadius)), paint);
+    } else if (startShape == ShapeType.circle && endShape == ShapeType.star) {
+      // Morph lingkaran ke bintang
+      if (progress < 0.5) {
+        // Masih mendekati lingkaran
+        cv.drawCircle(pos, size, paint);
+      } else {
+        // Mulai menjadi bintang
+        _drawStar(cv, pos, size, 5, progress * 2 - 1, paint);
+      }
+    } else if (startShape == ShapeType.square &&
+        endShape == ShapeType.triangle) {
+      // Morph kotak ke segitiga
+      if (progress < 0.3) {
+        // Masih mendekati kotak
+        final rect =
+            Rect.fromCenter(center: pos, width: size * 2, height: size * 2);
+        cv.drawRect(rect, paint);
+      } else {
+        // Mulai menjadi segitiga
+        _drawTriangle(cv, pos, size * 2, paint, progress);
+      }
+    } else {
+      // Default fallback ke lingkaran
+      cv.drawCircle(pos, size, paint);
+    }
+  }
+
+  void _drawStar(Canvas canvas, Offset center, double radius, int points,
+      double sharpness, Paint paint) {
+    final path = Path();
+    final angleStep = 2 * math.pi / (points * 2);
+
+    for (int i = 0; i < points * 2; i++) {
+      final angle = -math.pi / 2 + i * angleStep;
+      final currentRadius = i.isEven
+          ? radius
+          : radius * (0.5 + 0.5 * sharpness); // Varisi panjang sinar
+
+      final x = center.dx + currentRadius * math.cos(angle);
+      final y = center.dy + currentRadius * math.sin(angle);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawTriangle(
+      Canvas canvas, Offset center, double size, Paint paint, double progress) {
+    final path = Path();
+    final height = size * math.sqrt(3) / 2;
+
+    // Progress mempengaruhi proporsi segitiga
+    final topOffset = size * 0.5 * (1 - progress);
+
+    path.moveTo(center.dx, center.dy - height / 2 + topOffset);
+    path.lineTo(center.dx - size / 2, center.dy + height / 2);
+    path.lineTo(center.dx + size / 2, center.dy + height / 2);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  // ───── easing lokal
+  // ───── easing lokal ─────
+  double _easeOutQuad(double t) => 1 - (1 - t) * (1 - t);
+  double _easeInQuad(double t) => t * t;
+  double _easeOutCubic(double t) => 1 - math.pow(1 - t, 3).toDouble();
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! ShapeMorphAnimator ||
+      old.particleCount != particleCount ||
+      old.particleSize != particleSize ||
+      old.maxScale != maxScale ||
+      old.startShape != startShape ||
+      old.endShape != endShape ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1;
+  @override
+  double getOuterPadding() => maxScale * 100 + particleSize * 2;
+}
+
+// Enum untuk bentuk dasar yang bisa digunakan pada ShapeMorphAnimator
+enum ShapeType {
+  circle,
+  square,
+  triangle,
+  star,
+  heart,
+}
+
 class AnimatorFactory {
   static EffectAnimator createAnimator(AnimationType type) {
     switch (type) {
+      case AnimationType.shapeExplode:
+        return ShapeExplodeAnimator(enableHueTilt: false);
+      case AnimationType.shapeVortex:
+        return ShapeVortexAnimator(enableHueTilt: false);
+      case AnimationType.shapePulse:
+        return ShapePulseAnimator(enableHueTilt: false);
+      case AnimationType.shapeWave:
+        return ShapeWaveAnimator(enableHueTilt: false);
+      case AnimationType.shapeMorph:
+        return ShapeMorphAnimator(
+          enableHueTilt: false,
+          startShape: ShapeType.circle,
+          endShape: ShapeType.star,
+        );
+      case AnimationType.radialBurst:
+        return RadialBurstAnimator(enableColorShift: false);
+      case AnimationType.bounceOutward:
+        return BounceOutwardAnimator(enableColorShift: false);
+      case AnimationType.spiralOutward:
+        return SpiralOutwardAnimator(enableColorShift: false);
       case AnimationType.radialFirework:
-        return RadialFireworkAnimator();
+        return RadialFireworkAnimator(enableColorShift: false);
       case AnimationType.firework:
-        return ShapeExplosionAnimator();
+        return ShapeExplosionAnimator(enableHueTilt: false);
       case AnimationType.ripple:
-        return PulseWaveAnimator();
+        return PulseWaveAnimator(enableHueTilt: false);
       case AnimationType.spiral:
-        return SpiralExplosionAnimator();
+        return SpiralExplosionAnimator(enableHueTilt: false);
       case AnimationType.shapeExplosion:
-        return ShapeExplosionAnimator();
+        return ShapeExplosionAnimator(enableHueTilt: false);
       case AnimationType.shapeImplode:
-        return ShapeImplodeAnimator();
+        return ShapeImplodeAnimator(enableHueTilt: false);
       case AnimationType.shapeRetractImplode:
-        return ShapeRetractImplodeAnimator();
+        return ShapeRetractImplodeAnimator(enableHueTilt: false);
       case AnimationType.shapeExplodeOut:
-        return ShapeExplodeOutAnimator();
+        return ShapeExplodeOutAnimator(enableHueTilt: false);
       case AnimationType.orbitBloom:
-        return OrbitBloomAnimatorV2();
+        return OrbitBloomAnimatorV2(enableHueTilt: false);
       case AnimationType.circleBurst:
-        return CircleBurstAnimator();
+        return CircleBurstAnimator(enableHueTilt: false);
       case AnimationType.circleBurstClean:
-        return CircleBurstCleanAnimator();
+        return CircleBurstCleanAnimator(enableHueTilt: false);
       case AnimationType.magicDust:
-        return MagicDustAnimator();
+        return MagicDustAnimator(enableHueTilt: false);
       case AnimationType.pixelExplosion:
-        return PixelExplosionAnimator();
+        return PixelExplosionAnimator(enableHueTilt: false);
       case AnimationType.pulseWave:
-        return PulseWaveAnimator();
+        return PulseWaveAnimator(enableHueTilt: false);
       case AnimationType.dotBurst:
-        return DotBurstAnimator();
+        return DotBurstAnimator(enableHueTilt: false);
       case AnimationType.dotAbsorbBurst:
-        return DotAbsorbBurstAnimator();
+        return DotAbsorbBurstAnimator(enableHueTilt: false);
       case AnimationType.rayLine:
-        return RayBurstMovingAnimator();
+        return RayBurstMovingAnimator(enableHueTilt: false);
       case AnimationType.circleOrbitSequential:
-        return CircleOrbitSequentialAnimator();
+        return CircleOrbitSequentialAnimator(enableHueTilt: false);
       case AnimationType.multiRingOrbit:
-        return MultiRingOrbitAnimator();
+        return MultiRingOrbitAnimator(enableHueTilt: false);
       case AnimationType.sequentialRingOrbit:
-        return SequentialRingOrbitAnimator();
+        return SequentialRingOrbitAnimator(enableHueTilt: false);
       case AnimationType.flowerCircle:
-        return FlowerCircleAnimator();
+        return FlowerCircleAnimator(enableHueTilt: false);
       case AnimationType.magicalFlower:
-        return MagicalFlowerAnimator();
+        return MagicalFlowerAnimator(enableHueTilt: false);
       case AnimationType.magicalOrbitDots:
-        return MagicalOrbitDotsAnimator();
+        return MagicalOrbitDotsAnimator(enableHueTilt: false);
     }
   }
 }

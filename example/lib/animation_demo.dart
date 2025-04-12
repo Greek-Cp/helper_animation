@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:helper_animation/helper_animation_library.dart';
+import 'package:helper_animation/constants/enums.dart';
+import 'package:helper_animation/widgets/effect_animation.dart';
 
 class AnimationDemo extends StatefulWidget {
   const AnimationDemo({Key? key}) : super(key: key);
