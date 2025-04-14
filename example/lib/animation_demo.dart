@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:helper_animation/constants/enums.dart';
-import 'package:helper_animation/widgets/effect_animation.dart';
+import 'package:helper_animation/helper_animation.dart';
 
 class AnimationDemo extends StatefulWidget {
   const AnimationDemo({Key? key}) : super(key: key);
@@ -13,7 +13,7 @@ class AnimationDemo extends StatefulWidget {
 class _AnimationDemoState extends State<AnimationDemo>
     with TickerProviderStateMixin {
   // Basic animation parameters
-  AnimationType _currentType = AnimationType.firework;
+  AnimationUndergroundType _currentType = AnimationUndergroundType.firework;
   AnimationPosition _position = AnimationPosition.outside;
   Color _effectColor = const Color(0xFF8BB3C5);
 
@@ -74,7 +74,7 @@ class _AnimationDemoState extends State<AnimationDemo>
     buffer.writeln('  // Your widget properties here');
     buffer.writeln(').withEffectAnimation(');
     buffer.writeln(
-        '  animationType: AnimationType.${_currentType.toString().split('.').last},');
+        '  AnimationUndergroundType: AnimationUndergroundType.${_currentType.toString().split('.').last},');
 
     // Only include non-default values to keep code clean
     if (_effectColor != const Color(0xFF8BB3C5)) {
@@ -555,7 +555,7 @@ class _AnimationDemoState extends State<AnimationDemo>
         // Animation Type Dropdown
         _buildSettingRow(
           'Animation Type',
-          DropdownButton<AnimationType>(
+          DropdownButton<AnimationUndergroundType>(
             value: _currentType,
             isExpanded: true,
             dropdownColor: Colors.grey.shade800,
@@ -564,15 +564,16 @@ class _AnimationDemoState extends State<AnimationDemo>
               color: Colors.deepPurple.shade200,
             ),
             style: const TextStyle(color: Colors.white),
-            onChanged: (AnimationType? newValue) {
+            onChanged: (AnimationUndergroundType? newValue) {
               if (newValue != null) {
                 setState(() {
                   _currentType = newValue;
                 });
               }
             },
-            items: AnimationType.values.map((AnimationType type) {
-              return DropdownMenuItem<AnimationType>(
+            items: AnimationUndergroundType.values
+                .map((AnimationUndergroundType type) {
+              return DropdownMenuItem<AnimationUndergroundType>(
                 value: type,
                 child: Text(
                   type.toString().split('.').last,
@@ -1220,7 +1221,8 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
   };
 
   // Pengaturan animasi
-  AnimationType _animationType = AnimationType.firework;
+  AnimationUndergroundType _AnimationUndergroundType =
+      AnimationUndergroundType.firework;
   double _radiusMultiplier = 1.8;
 
   @override
@@ -1454,7 +1456,7 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
                                   ),
                                 ).withEffectAnimation(
                                   // Gunakan nilai dari state class
-                                  animationType: _animationType,
+                                  animationType: _AnimationUndergroundType,
                                   effectColor: droppedItemId != null
                                       ? _items.firstWhere((item) =>
                                           item['id'] == droppedItemId)['color']
@@ -1505,11 +1507,11 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
 
           // Panel pengaturan melayang
           FloatingAnimationPanel(
-            currentType: _animationType,
+            currentType: _AnimationUndergroundType,
             currentRadius: _radiusMultiplier,
             onTypeChanged: (type) {
               setState(() {
-                _animationType = type;
+                _AnimationUndergroundType = type;
               });
             },
             onRadiusChanged: (radius) {
@@ -1538,9 +1540,9 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
 
 /// Panel pengaturan animasi yang melayang di bagian bawah layar
 class FloatingAnimationPanel extends StatefulWidget {
-  final AnimationType currentType;
+  final AnimationUndergroundType currentType;
   final double currentRadius;
-  final Function(AnimationType) onTypeChanged;
+  final Function(AnimationUndergroundType) onTypeChanged;
   final Function(double) onRadiusChanged;
   final VoidCallback onPreviewTap;
 
@@ -1625,14 +1627,14 @@ class _FloatingAnimationPanelState extends State<FloatingAnimationPanel> {
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: DropdownButton<AnimationType>(
+                    child: DropdownButton<AnimationUndergroundType>(
                       value: widget.currentType,
                       isExpanded: true,
                       dropdownColor: Colors.black.withOpacity(0.8),
                       underline: Container(),
                       style: TextStyle(color: Colors.white),
                       icon: Icon(Icons.arrow_drop_down, color: Colors.white),
-                      items: AnimationType.values.map((type) {
+                      items: AnimationUndergroundType.values.map((type) {
                         return DropdownMenuItem(
                           value: type,
                           child: Text(_getDisplayName(type)),
@@ -1719,12 +1721,12 @@ class _FloatingAnimationPanelState extends State<FloatingAnimationPanel> {
     );
   }
 
-  // Helper method untuk mendapatkan nama display yang lebih baik dari AnimationType
-  String _getDisplayName(AnimationType type) {
+  // Helper method untuk mendapatkan nama display yang lebih baik dari AnimationUndergroundType
+  String _getDisplayName(AnimationUndergroundType type) {
     switch (type) {
-      case AnimationType.firework:
+      case AnimationUndergroundType.firework:
         return 'Firework';
-      case AnimationType.ripple:
+      case AnimationUndergroundType.ripple:
         return 'Ripple';
       default:
         return type.toString().split('.').last;

@@ -28,7 +28,7 @@ class EffectAnimation extends StatefulWidget {
   final Duration duration;
   final bool repeatWhenDrag;
   final bool autoAnimate;
-  final AnimationType animationType;
+  final AnimationUndergroundType animationType;
   final double?
       radiusMultiplier; // Jarak/ukuran animasi relatif terhadap widget
   final AnimationPosition position; // Posisi animasi relatif terhadap widget
@@ -36,14 +36,14 @@ class EffectAnimation extends StatefulWidget {
   final EffectAnimationController? controller; // Controller baru
   final bool touchEnabled; // Flag untuk mengaktifkan/menonaktifkan respons tap
 
-   EffectAnimation({
+  EffectAnimation({
     Key? key,
     required this.child,
     this.effectColor = const Color(0xFF8BB3C5),
     this.duration = const Duration(milliseconds: 2400),
     this.repeatWhenDrag = true,
     this.autoAnimate = false,
-    this.animationType = AnimationType.firework,
+    this.animationType = AnimationUndergroundType.firework,
     this.radiusMultiplier,
     this.position = AnimationPosition.outside,
     this.customOffset,
@@ -247,7 +247,7 @@ extension EffectAnimationExtension on Widget {
     Duration duration = const Duration(milliseconds: 2400),
     bool repeatWhenDrag = true,
     bool autoAnimate = false,
-    AnimationType animationType = AnimationType.firework,
+    AnimationUndergroundType animationType = AnimationUndergroundType.firework,
     double? radiusMultiplier,
     AnimationPosition position = AnimationPosition.outside,
     Offset? customOffset,

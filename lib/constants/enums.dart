@@ -13,7 +13,7 @@ enum AnimationPosition {
   bottomRight, // Di kanan bawah widget
 }
 
-enum AnimationType {
+enum AnimationUndergroundType {
   // Tipe baru yang ditambahkan
   shapeExplode,
   shapeVortex,

@@ -4839,73 +4839,73 @@ enum ShapeType {
 }
 
 class AnimatorFactory {
-  static EffectAnimator createAnimator(AnimationType type) {
+  static EffectAnimator createAnimator(AnimationUndergroundType type) {
     switch (type) {
-      case AnimationType.shapeExplode:
+      case AnimationUndergroundType.shapeExplode:
         return ShapeExplodeAnimator(enableHueTilt: false);
-      case AnimationType.shapeVortex:
+      case AnimationUndergroundType.shapeVortex:
         return ShapeVortexAnimator(enableHueTilt: false);
-      case AnimationType.shapePulse:
+      case AnimationUndergroundType.shapePulse:
         return ShapePulseAnimator(enableHueTilt: false);
-      case AnimationType.shapeWave:
+      case AnimationUndergroundType.shapeWave:
         return ShapeWaveAnimator(enableHueTilt: false);
-      case AnimationType.shapeMorph:
+      case AnimationUndergroundType.shapeMorph:
         return ShapeMorphAnimator(
           enableHueTilt: false,
           startShape: ShapeType.circle,
           endShape: ShapeType.star,
         );
-      case AnimationType.radialBurst:
+      case AnimationUndergroundType.radialBurst:
         return RadialBurstAnimator(enableColorShift: false);
-      case AnimationType.bounceOutward:
+      case AnimationUndergroundType.bounceOutward:
         return BounceOutwardAnimator(enableColorShift: false);
-      case AnimationType.spiralOutward:
+      case AnimationUndergroundType.spiralOutward:
         return SpiralOutwardAnimator(enableColorShift: false);
-      case AnimationType.radialFirework:
+      case AnimationUndergroundType.radialFirework:
         return RadialFireworkAnimator(enableColorShift: false);
-      case AnimationType.firework:
+      case AnimationUndergroundType.firework:
         return ShapeExplosionAnimator(enableHueTilt: false);
-      case AnimationType.ripple:
+      case AnimationUndergroundType.ripple:
         return PulseWaveAnimator(enableHueTilt: false);
-      case AnimationType.spiral:
+      case AnimationUndergroundType.spiral:
         return SpiralExplosionAnimator(enableHueTilt: false);
-      case AnimationType.shapeExplosion:
+      case AnimationUndergroundType.shapeExplosion:
         return ShapeExplosionAnimator(enableHueTilt: false);
-      case AnimationType.shapeImplode:
+      case AnimationUndergroundType.shapeImplode:
         return ShapeImplodeAnimator(enableHueTilt: false);
-      case AnimationType.shapeRetractImplode:
+      case AnimationUndergroundType.shapeRetractImplode:
         return ShapeRetractImplodeAnimator(enableHueTilt: false);
-      case AnimationType.shapeExplodeOut:
+      case AnimationUndergroundType.shapeExplodeOut:
         return ShapeExplodeOutAnimator(enableHueTilt: false);
-      case AnimationType.orbitBloom:
+      case AnimationUndergroundType.orbitBloom:
         return OrbitBloomAnimatorV2(enableHueTilt: false);
-      case AnimationType.circleBurst:
+      case AnimationUndergroundType.circleBurst:
         return CircleBurstAnimator(enableHueTilt: false);
-      case AnimationType.circleBurstClean:
+      case AnimationUndergroundType.circleBurstClean:
         return CircleBurstCleanAnimator(enableHueTilt: false);
-      case AnimationType.magicDust:
+      case AnimationUndergroundType.magicDust:
         return MagicDustAnimator(enableHueTilt: false);
-      case AnimationType.pixelExplosion:
+      case AnimationUndergroundType.pixelExplosion:
         return PixelExplosionAnimator(enableHueTilt: false);
-      case AnimationType.pulseWave:
+      case AnimationUndergroundType.pulseWave:
         return PulseWaveAnimator(enableHueTilt: false);
-      case AnimationType.dotBurst:
+      case AnimationUndergroundType.dotBurst:
         return DotBurstAnimator(enableHueTilt: false);
-      case AnimationType.dotAbsorbBurst:
+      case AnimationUndergroundType.dotAbsorbBurst:
         return DotAbsorbBurstAnimator(enableHueTilt: false);
-      case AnimationType.rayLine:
+      case AnimationUndergroundType.rayLine:
         return RayBurstMovingAnimator(enableHueTilt: false);
-      case AnimationType.circleOrbitSequential:
+      case AnimationUndergroundType.circleOrbitSequential:
         return CircleOrbitSequentialAnimator(enableHueTilt: false);
-      case AnimationType.multiRingOrbit:
+      case AnimationUndergroundType.multiRingOrbit:
         return MultiRingOrbitAnimator(enableHueTilt: false);
-      case AnimationType.sequentialRingOrbit:
+      case AnimationUndergroundType.sequentialRingOrbit:
         return SequentialRingOrbitAnimator(enableHueTilt: false);
-      case AnimationType.flowerCircle:
+      case AnimationUndergroundType.flowerCircle:
         return FlowerCircleAnimator(enableHueTilt: false);
-      case AnimationType.magicalFlower:
+      case AnimationUndergroundType.magicalFlower:
         return MagicalFlowerAnimator(enableHueTilt: false);
-      case AnimationType.magicalOrbitDots:
+      case AnimationUndergroundType.magicalOrbitDots:
         return MagicalOrbitDotsAnimator(enableHueTilt: false);
     }
   }

@@ -3586,7 +3586,7 @@ class BouncingBallsAnimator implements EffectAnimator {
   double getOuterPadding() => 20.0;
 }
 /*
-enum AnimationType {
+enum AnimationUndergroundType {
   firework,
   ripple,
   confetti,
@@ -3611,44 +3611,44 @@ enum AnimationType {
 
 /*
 class AnimatorFactory {
-  static EffectAnimator createAnimator(AnimationType type) {
+  static EffectAnimator createAnimator(AnimationUndergroundType type) {
     switch (type) {
-      case AnimationType.firework:
+      case AnimationUndergroundType.firework:
         return FireworkAnimator();
-      case AnimationType.ripple:
+      case AnimationUndergroundType.ripple:
         return RippleAnimator();
-      case AnimationType.confetti:
+      case AnimationUndergroundType.confetti:
         return ConfettiAnimator();
-      case AnimationType.orbital:
+      case AnimationUndergroundType.orbital:
         return OrbitalAnimator();
-      case AnimationType.radialFirework:
+      case AnimationUndergroundType.radialFirework:
         return SparkleStarburstAnimator();
-      case AnimationType.sparkel:
+      case AnimationUndergroundType.sparkel:
         return SparkleStarburstAnimator();
-      case AnimationType.breathAnimation:
+      case AnimationUndergroundType.breathAnimation:
         return BreathAnimator();
-      case AnimationType.clickRay:
+      case AnimationUndergroundType.clickRay:
         return ClickRayAnimator();
       // Tambahkan case untuk animator baru
-      case AnimationType.pulseWave:
+      case AnimationUndergroundType.pulseWave:
         return PulseWaveAnimator();
-      case AnimationType.sparkleEffect:
+      case AnimationUndergroundType.sparkleEffect:
         return SparkleEffectAnimator();
-      case AnimationType.lightning:
+      case AnimationUndergroundType.lightning:
         return LightningAnimator();
-      case AnimationType.glowingOutline:
+      case AnimationUndergroundType.glowingOutline:
         return GlowingOutlineAnimator();
-      case AnimationType.rotatingOrbs:
+      case AnimationUndergroundType.rotatingOrbs:
         return RotatingOrbsAnimator();
-      case AnimationType.explodingStars:
+      case AnimationUndergroundType.explodingStars:
         return ExplodingStarsAnimator();  
-      case AnimationType.rippleRings:
+      case AnimationUndergroundType.rippleRings:
         return RippleRingsAnimator();
-      case AnimationType.energyField:
+      case AnimationUndergroundType.energyField:
         return EnergyFieldAnimator();
-      case AnimationType.particleSwarm:
+      case AnimationUndergroundType.particleSwarm:
         return ParticleSwarmAnimator();
-      case AnimationType.shockwave:
+      case AnimationUndergroundType.shockwave:
         return ShockwaveAnimator();
       default:
         return FireworkAnimator(); // Default
