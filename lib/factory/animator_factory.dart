@@ -4838,11 +4838,314 @@ enum ShapeType {
   heart,
 }
 
+class PerimeterParticlesAnimator extends EffectAnimator {
+  PerimeterParticlesAnimator({bool enableHueTilt = false}) : super();
+
+  @override
+  void paint(Canvas canvas, Size childSize, double progress, Offset center,
+      Color color,
+      {Offset? positionOffset, double? radiusMultiplier}) {
+    // Use provided values or defaults
+    final offset = positionOffset ?? Offset.zero;
+    final radius = radiusMultiplier ?? 1.0;
+
+    // Calculate the rectangle representing the widget's perimeter
+    final rect = Rect.fromCenter(
+      center: center.translate(offset.dx, offset.dy),
+      width: childSize.width,
+      height: childSize.height,
+    );
+
+    // Number of particles proportional to perimeter length
+    final perimeter = 2 * (childSize.width + childSize.height);
+    final particleCount = (perimeter / 10).round(); // One particle every ~10px
+
+    // Generate particles along the perimeter
+    for (int i = 0; i < particleCount; i++) {
+      final particleProgress =
+          (progress - (i / particleCount * 0.2)).clamp(0.0, 1.0);
+      if (particleProgress <= 0) continue;
+
+      // Determine particle position along perimeter
+      final position = _getPositionOnPerimeter(rect, i / particleCount);
+
+      // Calculate particle size, opacity based on progress
+      final size = particleProgress * 8; // Max particle size
+      final opacity = sin(particleProgress * pi); // Fade in/out
+
+      // Draw particle
+      final paint = Paint()
+        ..color = color.withOpacity(opacity)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(position, size, paint);
+
+      // Optionally add some outward motion
+      if (particleProgress > 0.3) {
+        // Calculate outward direction vector
+        final dx = position.dx - center.dx;
+        final dy = position.dy - center.dy;
+        final distance = sqrt(dx * dx + dy * dy);
+
+        // Normalize the vector (fix for missing 'normalize' method)
+        final normalizedDx = distance > 0 ? dx / distance : 0;
+        final normalizedDy = distance > 0 ? dy / distance : 0;
+
+        final outwardDistance = particleProgress * 20; // Max distance to travel
+        final outwardPosition = Offset(
+            position.dx + normalizedDx * outwardDistance,
+            position.dy + normalizedDy * outwardDistance);
+
+        // Draw particle with reduced opacity for trail effect
+        canvas.drawCircle(outwardPosition, size * 0.7,
+            paint..color = paint.color.withOpacity(opacity * 0.7));
+      }
+    }
+  }
+
+  // Helper to determine a position along the perimeter
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    // Top edge
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    }
+    // Right edge
+    else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    }
+    // Bottom edge
+    else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    }
+    // Left edge
+    else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() {
+    return AnimationPosition.inside;
+  }
+
+  @override
+  double getDefaultRadiusMultiplier() {
+    return 1.0;
+  }
+
+  @override
+  double getOuterPadding() {
+    return 0.0; // No padding needed since we're following the perimeter
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator oldAnimator) {
+    // Only repaint if the animator type changes
+    return oldAnimator is! PerimeterParticlesAnimator;
+  }
+}
+
+class PerimeterBounceAnimator extends BounceOutwardAnimator {
+  PerimeterBounceAnimator({
+    int particleCount = 20,
+    double particleRadius = 5,
+    double tailFactor = 2.0,
+    double maxRadiusScale = 0.8,
+    bool useUniformAngles = true,
+    int bounceCount = 2,
+    bool enableColorShift = false,
+    double colorShiftRange = 0.4,
+    double saturationBoost = 1.2,
+  }) : super(
+          particleCount: particleCount,
+          particleRadius: particleRadius,
+          tailFactor: tailFactor,
+          maxRadiusScale: maxRadiusScale,
+          useUniformAngles: useUniformAngles,
+          bounceCount: bounceCount,
+          enableColorShift: enableColorShift,
+          colorShiftRange: colorShiftRange,
+          saturationBoost: saturationBoost,
+        );
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rnd = math.Random(42);
+
+    // Create the rectangle representing the widget's perimeter
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    // Use the existing particle count
+    final points = _generatePerimeterPoints(rect, particleCount);
+
+    // Gambar setiap partikel
+    for (var i = 0; i < particleCount; i++) {
+      final delay = i * 0.015; // Delay lebih cepat untuk efek bounce
+      final rawT = progress - delay;
+      if (rawT <= 0) continue;
+
+      final t = (rawT / (1 - delay)).clamp(0.0, 1.0);
+
+      // Get the starting point from the perimeter
+      final startPoint = points[i];
+
+      // Calculate the angle from the center to this perimeter point
+      final angle = math.atan2(startPoint.dy - c.dy, startPoint.dx - c.dx);
+
+      // Calculate max radius based on distance to edge
+      final distToEdge = _distanceToEdge(c, angle, size);
+      final maxRadius = distToEdge * maxRadiusScale * radiusMultiplier;
+
+      // Bounce effect - gerakan keluar dengan bounce
+      final bounceProgress = t < 0.8 ? t / 0.8 : 1.0;
+      final dist = maxRadius * _easeOutBounce(bounceProgress);
+
+      // Tambahkan sedikit gerakan orbital
+      final orbitOffset =
+          math.sin(t * math.pi * 2 * bounceCount) * (maxRadius * 0.05);
+      final orbitAngle = angle + math.pi / 2; // Tegak lurus dengan arah radial
+
+      final orbitPos = Offset(math.cos(orbitAngle) * orbitOffset,
+          math.sin(orbitAngle) * orbitOffset);
+
+      // Calculate position from start point instead of center
+      final radialPos =
+          startPoint + Offset(math.cos(angle), math.sin(angle)) * dist;
+      final pos = radialPos + orbitPos;
+
+      // Skala dan opasitas (same as original)
+      double scale, opacity;
+      if (t < 0.15) {
+        scale = _easeOutQuad(t / 0.15);
+        opacity = scale;
+      } else if (t > 0.85) {
+        final tt = (t - 0.85) / 0.15;
+        scale = 1.0 - _easeInQuad(tt);
+        opacity = scale;
+      } else {
+        scale = 1.0;
+        opacity = 1.0;
+      }
+
+      // Warna dengan color shift optional (same as original)
+      Color particleColor = color;
+      if (enableColorShift) {
+        final hsl = HSLColor.fromColor(color);
+        final shift = (angle / (2 * math.pi)) * 360 * colorShiftRange;
+        particleColor = hsl
+            .withHue((hsl.hue + shift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      particleColor = particleColor.withOpacity(opacity);
+
+      // Gambar partikel (same as original)
+      final rad = particleRadius * radiusMultiplier * scale;
+      canvas.drawCircle(pos, rad, Paint()..color = particleColor);
+
+      // Gambar ekor (same as original)
+      if (tailFactor > 0) {
+        final tailAngle =
+            angle - math.pi / 8 + (math.sin(t * 15) * math.pi / 6);
+        final tailLen = rad * tailFactor;
+        final tailEnd =
+            pos + Offset(math.cos(tailAngle), math.sin(tailAngle)) * -tailLen;
+
+        canvas.drawLine(
+            pos,
+            tailEnd,
+            Paint()
+              ..color = particleColor
+              ..strokeWidth = rad * 0.6
+              ..strokeCap = StrokeCap.round);
+      }
+    }
+  }
+
+  // Helper method to generate points along the perimeter
+  List<Offset> _generatePerimeterPoints(Rect rect, int count) {
+    final points = <Offset>[];
+    final totalPerimeter = 2 * (rect.width + rect.height);
+
+    for (int i = 0; i < count; i++) {
+      final ratio = i / count;
+      final distanceAlongPerimeter = totalPerimeter * ratio;
+
+      // Top edge
+      if (distanceAlongPerimeter < rect.width) {
+        points.add(Offset(rect.left + distanceAlongPerimeter, rect.top));
+      }
+      // Right edge
+      else if (distanceAlongPerimeter < rect.width + rect.height) {
+        points.add(Offset(
+            rect.right, rect.top + (distanceAlongPerimeter - rect.width)));
+      }
+      // Bottom edge
+      else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+        points.add(Offset(
+            rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+            rect.bottom));
+      }
+      // Left edge
+      else {
+        points.add(Offset(
+            rect.left,
+            rect.bottom -
+                (distanceAlongPerimeter - 2 * rect.width - rect.height)));
+      }
+    }
+
+    return points;
+  }
+
+  // Helper to calculate distance from center to edge in a given angle
+  double _distanceToEdge(Offset center, double angle, Size size) {
+    final halfWidth = size.width / 2;
+    final halfHeight = size.height / 2;
+
+    // Calculate distances to vertical and horizontal edges
+    final cosAngle = math.cos(angle).abs();
+    final sinAngle = math.sin(angle).abs();
+
+    if (cosAngle < 1e-6) {
+      // Purely vertical direction
+      return halfHeight;
+    } else if (sinAngle < 1e-6) {
+      // Purely horizontal direction
+      return halfWidth;
+    } else {
+      // Calculate intersections with rectangle edges
+      final distToVertical = halfWidth / cosAngle;
+      final distToHorizontal = halfHeight / sinAngle;
+      return math.min(distToVertical, distToHorizontal);
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.inside;
+}
+
 class AnimatorFactory {
   static EffectAnimator createAnimator(AnimationUndergroundType type) {
     switch (type) {
       case AnimationUndergroundType.shapeExplode:
-        return ShapeExplodeAnimator(enableHueTilt: false);
+        return PerimeterBounceAnimator();
       case AnimationUndergroundType.shapeVortex:
         return ShapeVortexAnimator(enableHueTilt: false);
       case AnimationUndergroundType.shapePulse:
