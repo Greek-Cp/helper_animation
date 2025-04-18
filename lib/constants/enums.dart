@@ -15,6 +15,17 @@ enum AnimationPosition {
 
 enum AnimationUndergroundType {
   // Tipe baru yang ditambahkan
+  perimeterRadialBurst,
+  perimeterShapeExplosion,
+  perimeterShapeImplode,
+  perimeterShapeRetractImplode,
+  perimeterShapeExplodeOut,
+  perimeterOrbitBloom,
+  perimeterRayBurst,
+  perimeterCircleBurst,
+  perimeterCircleOrbitSequential,
+  perimeterMultiRingOrbit,
+  perimeterSequentialRingOrbit,
   shapeExplode,
   shapeVortex,
   shapePulse,
@@ -44,7 +55,6 @@ enum AnimationUndergroundType {
   multiRingOrbit,
   sequentialRingOrbit,
   flowerCircle,
-  magicalFlower,
   magicalOrbitDots,
   // rippleBeautiful,
   // whirlpoolNew,

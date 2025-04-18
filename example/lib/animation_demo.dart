@@ -354,8 +354,8 @@ class _AnimationDemoState extends State<AnimationDemo>
                       ),
                     ),
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: 700,
+                      height: 50,
                       decoration: BoxDecoration(
                         color: _effectColor,
                         borderRadius: BorderRadius.circular(20),
