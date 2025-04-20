@@ -12,6 +12,1893 @@ import 'dart:ui';
 
 import 'dart:math' as math;
 import 'dart:ui';
+import 'dart:math' as math;
+import 'dart:ui';
+import 'dart:math' as math;
+import 'dart:ui';
+import 'dart:math' as math;
+import 'dart:ui';
+import 'dart:math' as math;
+import 'dart:ui';
+
+/// PerimeterPulseCascadeAnimator - Animator efek multi-fase dimana pulse/gelombang
+/// bergerak di sepanjang perimeter dan partikel-partikel mengeluarkan burst.
+class PerimeterPulseCascadeAnimator implements EffectAnimator {
+  // Parameter visual
+  final int dotCount; // Jumlah partikel
+  final double dotSize; // Ukuran dasar dot
+  final double pulseAmplitude; // Amplitudo pulsasi (0-1)
+  final double pulseWidth; // Lebar gelombang pulsasi
+  final int pulseLaps; // Jumlah putaran gelombang
+  final double burstRadius; // Jarak burst
+  final double perimetralShift; // Jarak dari perimeter
+
+  // Parameter lanjutan
+  final bool enableGlow; // Aktifkan efek glow
+  final double glowSize; // Ukuran relatif glow
+  final double glowIntensity; // Intensitas glow
+  final bool enableTrails; // Aktifkan efek trails
+  final int trailCount; // Jumlah trail per dot
+  final double trailFade; // Kecepatan memudar trail
+
+  // Parameter warna
+  final bool enableHueTilt; // Aktifkan gradasi warna
+  final double hueTiltRange; // Rentang gradasi (0-1 = 0-360°)
+  final double saturationBoost; // Penguatan saturasi warna
+
+  PerimeterPulseCascadeAnimator({
+    this.dotCount = 36, // Banyak dot untuk efek gelombang halus
+    this.dotSize = 5, // Ukuran moderat
+    this.pulseAmplitude = 0.8, // Amplitudo besar untuk efek dramatis
+    this.pulseWidth = 0.2, // Lebar gelombang 20% dari perimeter
+    this.pulseLaps = 2, // 2 putaran untuk animasi lengkap
+    this.burstRadius = 20.0, // Jarak burst yang terlihat
+    this.perimetralShift = 8.0, // Sedikit jarak dari tepi
+
+    this.enableGlow = true, // Aktifkan glow untuk efek visual
+    this.glowSize = 2.5, // Glow 2.5x ukuran dot
+    this.glowIntensity = 0.5, // Intensitas moderat
+    this.enableTrails = true, // Aktifkan trail
+    this.trailCount = 3, // 3 trail per dot
+    this.trailFade = 0.8, // Memudar cepat
+
+    this.enableHueTilt = false, // Default tidak menggunakan hueTilt
+    this.hueTiltRange = 1.0, // Jika diaktifkan, rentang warna penuh (360°)
+    this.saturationBoost = 1.2, // Sedikit peningkatan saturasi
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+
+    // Buat rect untuk perimeter
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    // Jarak burst aktual
+    final actualBurstRadius = burstRadius * radiusMultiplier;
+
+    // Gambar trail terlebih dahulu jika diaktifkan
+    if (enableTrails) {
+      for (int trail = trailCount - 1; trail >= 0; trail--) {
+        final trailProgress = (progress - (trail * 0.02)).clamp(0.0, 1.0);
+        final trailOpacity =
+            math.pow(1 - (trail / trailCount), trailFade).toDouble();
+
+        _drawPerimeterPulse(canvas, rect, c, trailProgress, color,
+            radiusMultiplier, trailOpacity.toDouble());
+      }
+    } else {
+      // Gambar hanya satu pulse tanpa trail
+      _drawPerimeterPulse(
+          canvas, rect, c, progress, color, radiusMultiplier, 1.0);
+    }
+  }
+
+  // Helper method untuk menggambar pulse pada perimeter
+  void _drawPerimeterPulse(
+      Canvas canvas,
+      Rect rect,
+      Offset center,
+      double progress,
+      Color color,
+      double radiusMultiplier,
+      double baseOpacity) {
+    // Progress mengontrol posisi gelombang di sepanjang perimeter
+    final wavePosition = (progress * pulseLaps) % 1.0;
+
+    // Gambar dots di sepanjang perimeter
+    for (int i = 0; i < dotCount; i++) {
+      final perimeterRatio = i / dotCount;
+
+      // Posisi dasar pada perimeter
+      final basePos = _getPositionOnPerimeter(rect, perimeterRatio);
+
+      // Hitung jarak dari pusat gelombang (0-0.5, dimana 0 = pusat gelombang)
+      final distFromPulse = (perimeterRatio - wavePosition).abs();
+      final wrappedDist = math.min(distFromPulse, 1 - distFromPulse);
+
+      // Hitung faktor pulsasi berdasarkan jarak dari pusat gelombang
+      double pulseFactor = 0;
+      if (wrappedDist < pulseWidth / 2) {
+        // Use cosine to create smooth pulse shape
+        pulseFactor = math.cos((wrappedDist / (pulseWidth / 2)) * math.pi) *
+            pulseAmplitude;
+      }
+
+      // Arah dari pusat ke perimeter
+      final dirVector = basePos - center;
+      final distance = dirVector.distance;
+      final direction = distance > 0
+          ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+          : Offset(0, 0);
+
+      // Jarak dari perimeter
+      final shiftDistance = perimetralShift * radiusMultiplier;
+      final baseShiftedPos = basePos - direction * shiftDistance;
+
+      // Posisi akhir dengan burst
+      final burstDistance = pulseFactor * 30;
+      final pos = baseShiftedPos - direction * burstDistance;
+
+      // Scale dot berdasarkan pulsasi
+      final scale = 1.0 + pulseFactor * 1.5;
+
+      // Opacity menurun untuk trail
+      final opacity = baseOpacity * (0.3 + pulseFactor * 0.7).clamp(0.3, 1.0);
+
+      // Warna dot
+      Color dotColor = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = perimeterRatio * 360 * hueTiltRange;
+        dotColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      dotColor = dotColor.withOpacity(opacity);
+
+      // Ukuran akhir dot
+      final rad = dotSize * radiusMultiplier * scale;
+
+      // Gambar glow effect
+      if (enableGlow && pulseFactor > 0.2) {
+        final glowRadius = rad * glowSize;
+        final glowOpacity = opacity * pulseFactor * glowIntensity;
+
+        canvas.drawCircle(
+            pos,
+            glowRadius,
+            Paint()
+              ..color = dotColor.withOpacity(glowOpacity)
+              ..maskFilter =
+                  MaskFilter.blur(BlurStyle.normal, glowRadius * 0.5));
+      }
+
+      // Gambar dot
+      canvas.drawCircle(pos, rad, Paint()..color = dotColor);
+    }
+  }
+
+  // Helper untuk posisi di perimeter
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    // Top edge
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    }
+    // Right edge
+    else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    }
+    // Bottom edge
+    else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    }
+    // Left edge
+    else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterPulseCascadeAnimator ||
+      old.dotCount != dotCount ||
+      old.dotSize != dotSize ||
+      old.pulseAmplitude != pulseAmplitude ||
+      old.pulseWidth != pulseWidth ||
+      old.pulseLaps != pulseLaps ||
+      old.burstRadius != burstRadius ||
+      old.perimetralShift != perimetralShift ||
+      old.enableGlow != enableGlow ||
+      old.glowSize != glowSize ||
+      old.glowIntensity != glowIntensity ||
+      old.enableTrails != enableTrails ||
+      old.trailCount != trailCount ||
+      old.trailFade != trailFade ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+
+  @override
+  double getOuterPadding() =>
+      perimetralShift +
+      burstRadius * (1 + pulseAmplitude) +
+      dotSize * glowSize +
+      10;
+}
+
+/// PerimeterConvergeBurstAnimator - Animator efek multi-fase dimana partikel
+/// dari perimeter menuju ke pusat, berdenyut, lalu meledak kembali ke perimeter.
+class PerimeterConvergeBurstAnimator implements EffectAnimator {
+  // Parameter visual
+  final int dotCount; // Jumlah partikel
+  final double dotSize; // Ukuran dot
+  final double dotTailFactor; // Panjang ekor
+  final bool enableTail; // Aktifkan ekor
+  final double pulseEffect; // Efek pulsasi (0-1)
+  final double perimetralShift; // Jarak partikel dari perimeter
+
+  // Fase animasi (proporsi total durasi)
+  final double convergePhase; // Fase konvergensi menuju pusat
+  final double holdPhase; // Fase diam di pusat dengan pulsasi
+  final double burstPhase; // Fase ledakan kembali ke perimeter
+
+  // Parameter lanjutan
+  final bool staggered; // Delay antar partikel
+  final double staggerAmount; // Jumlah delay
+  final bool randomizeOrigin; // Acak posisi awal di perimeter
+
+  // Parameter warna
+  final bool enableHueTilt; // Aktifkan gradasi warna
+  final double hueTiltRange; // Rentang gradasi (0-1 = 0-360°)
+  final double saturationBoost; // Penguatan saturasi warna
+
+  PerimeterConvergeBurstAnimator({
+    this.dotCount = 16, // Jumlah dot yang masuk akal untuk perimeter
+    this.dotSize = 8, // Ukuran yang terlihat jelas
+    this.dotTailFactor = 2.5, // Ekor cukup panjang untuk terlihat
+    this.enableTail = true, // Aktifkan ekor untuk efek gerakan
+    this.pulseEffect = 0.4, // Pulsasi moderat
+    this.perimetralShift = 15.0, // Jarak partikel dari perimeter
+
+    this.convergePhase = 0.35, // 35% waktu untuk konvergensi
+    this.holdPhase = 0.2, // 20% waktu untuk diam dan berdenyut
+    this.burstPhase = 0.45, // 45% waktu untuk ledakan kembali
+
+    this.staggered = true, // Aktifkan delay antar partikel
+    this.staggerAmount = 0.15, // Delay 15% dari total durasi
+    this.randomizeOrigin = false, // Posisi awal deterministic
+
+    this.enableHueTilt = false, // Default tidak menggunakan hueTilt
+    this.hueTiltRange = 0.8, // Jika diaktifkan, rentang warna 80% (288°)
+    this.saturationBoost = 1.2, // Sedikit peningkatan saturasi
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+
+    // Buat rect untuk perimeter
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    // Generator acak dengan seed tetap untuk konsistensi
+    final rnd = math.Random(42);
+
+    // Hitung batas fase
+    final double endConverge = convergePhase;
+    final double endHold = convergePhase + holdPhase;
+    // endBurst = 1.0
+
+    // Define origin positions for all dots at the perimeter
+    final List<Offset> originPositions = [];
+    final List<double> perimeterRatios = [];
+
+    // Generate position ratios along perimeter
+    for (int i = 0; i < dotCount; i++) {
+      double ratio;
+      if (randomizeOrigin) {
+        ratio = rnd.nextDouble(); // Random position
+      } else {
+        ratio = i / dotCount; // Evenly spaced
+      }
+      perimeterRatios.add(ratio);
+      originPositions.add(_getPositionOnPerimeter(rect, ratio));
+    }
+
+    // Draw each dot
+    for (int i = 0; i < dotCount; i++) {
+      // Apply staggered delay if enabled
+      double adjustedProgress = progress;
+      if (staggered) {
+        final delay = (i / dotCount) * staggerAmount;
+        adjustedProgress = (progress - delay).clamp(0.0, 1.0) / (1.0 - delay);
+      }
+
+      // Get dot origin position
+      final originPos = originPositions[i];
+      final perimeterRatio = perimeterRatios[i];
+
+      // Direction from center to perimeter (for returning phase)
+      final dirVector = originPos - c;
+      final distance = dirVector.distance;
+      final direction = distance > 0
+          ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+          : Offset(0, 0);
+
+      // Calculate position, scale and opacity based on phase
+      Offset pos;
+      double dotScale = 1.0;
+      double opacity = 1.0;
+
+      // Perimeter shift - make sure dots stay slightly away from edges
+      final shiftDistance = perimetralShift * radiusMultiplier;
+      final adjustedOrigin = originPos - direction * shiftDistance;
+
+      // PHASE 1: CONVERGE
+      if (adjustedProgress < endConverge) {
+        final convergeProgress = adjustedProgress / endConverge;
+        final easeProgress = _easeInOutCubic(convergeProgress);
+
+        // Interpolate from origin to center
+        pos = Offset.lerp(adjustedOrigin, c, easeProgress)!;
+
+        // Scale grows as dots approach center
+        dotScale = 0.6 + easeProgress * 0.4;
+
+        // Full opacity during convergence
+        opacity = 1.0;
+      }
+      // PHASE 2: HOLD
+      else if (adjustedProgress < endHold) {
+        // Stay at center
+        pos = c;
+
+        // Apply pulsation during hold
+        final holdProgress = (adjustedProgress - endConverge) / holdPhase;
+        final pulseVal = math.sin(holdProgress * math.pi * 5) * pulseEffect;
+        dotScale = 1.0 + pulseVal;
+
+        // Fully opaque during hold
+        opacity = 1.0;
+      }
+      // PHASE 3: BURST
+      else {
+        final burstProgress = (adjustedProgress - endHold) / (1.0 - endHold);
+
+        // Use elastic easing for burst
+        final easeProgress = _easeOutElastic(burstProgress);
+
+        // Interpolate from center back to origin
+        pos = Offset.lerp(c, adjustedOrigin, easeProgress)!;
+
+        // Scale fades out toward the end
+        dotScale = burstProgress > 0.8
+            ? 1.0 - ((burstProgress - 0.8) / 0.2) * 0.3
+            : 1.0;
+
+        // Opacity fades out toward the end
+        opacity =
+            burstProgress > 0.85 ? 1.0 - ((burstProgress - 0.85) / 0.15) : 1.0;
+      }
+
+      // Apply hueTilt if enabled
+      Color dotColor = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = perimeterRatio * 360 * hueTiltRange;
+        dotColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+      dotColor = dotColor.withOpacity(opacity);
+
+      // Calculate final dot radius
+      final rad = dotSize * radiusMultiplier * dotScale;
+
+      // TAIL EFFECT - only in converge and burst phases
+      if (enableTail &&
+          (adjustedProgress < endConverge || adjustedProgress > endHold)) {
+        final tailLen = rad * dotTailFactor;
+
+        Offset tailDir;
+        // Converge: tail points away from center
+        if (adjustedProgress < endConverge) {
+          tailDir = -direction;
+        }
+        // Burst: tail points toward center
+        else {
+          tailDir = direction;
+        }
+
+        // Calculate tail start position
+        final tailStart = pos - tailDir * tailLen;
+
+        // Draw tail
+        canvas.drawLine(
+            tailStart,
+            pos,
+            Paint()
+              ..color = dotColor.withOpacity(opacity * 0.7)
+              ..strokeWidth = rad * 0.8
+              ..strokeCap = StrokeCap.round);
+      }
+
+      // Draw dot
+      canvas.drawCircle(pos, rad, Paint()..color = dotColor);
+    }
+  }
+
+  // Helper for positioning on perimeter
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    // Top edge
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    }
+    // Right edge
+    else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    }
+    // Bottom edge
+    else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    }
+    // Left edge
+    else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  // Easing functions
+  double _easeInOutCubic(double t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  double _easeOutElastic(double t) {
+    const c4 = (2 * math.pi) / 3;
+    return t == 0
+        ? 0
+        : t == 1
+            ? 1
+            : math.pow(2, -10 * t) * math.sin((t * 10 - 0.75) * c4) + 1;
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterConvergeBurstAnimator ||
+      old.dotCount != dotCount ||
+      old.dotSize != dotSize ||
+      old.dotTailFactor != dotTailFactor ||
+      old.enableTail != enableTail ||
+      old.pulseEffect != pulseEffect ||
+      old.perimetralShift != perimetralShift ||
+      old.convergePhase != convergePhase ||
+      old.holdPhase != holdPhase ||
+      old.burstPhase != burstPhase ||
+      old.staggered != staggered ||
+      old.staggerAmount != staggerAmount ||
+      old.randomizeOrigin != randomizeOrigin ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+
+  @override
+  double getOuterPadding() =>
+      perimetralShift + dotSize * (1 + dotTailFactor) + 10;
+}
+
+class PerimeterPulsatingOrbitAnimator implements EffectAnimator {
+  // ─── Parameter visual ─────
+  final int particleCount; // Jumlah partikel
+  final double baseRadius; // Radius dasar partikel
+  final double trailLength; // Panjang trail (dalam jumlah partikel)
+  final double pulseFrequency; // Frekuensi pulsasi
+  final double pulseAmplitude; // Amplitudo pulsasi (faktor penambahan ukuran)
+  final double orbitOffset; // Jarak orbit dari perimeter
+  final double orbitVariation; // Variasi jarak orbit (untuk efek bergelombang)
+  final double trailFade; // Tingkat pelemahan trail (0-1)
+
+  // ─── Parameter warna ─────
+  final bool enableHueTilt; // Aktifkan gradasi warna
+  final double hueTiltRange; // Rentang gradasi (0-1, dimana 1 = 360°)
+  final double saturationBoost; // Peningkatan saturasi (1 = tidak berubah)
+  final double brightnessBoost; // Peningkatan kecerahan (1 = tidak berubah)
+  final bool glowEffect; // Aktifkan efek glow
+  final double glowSize; // Ukuran glow relatif terhadap partikel
+
+  PerimeterPulsatingOrbitAnimator({
+    this.particleCount = 48, // Banyak partikel untuk efek mulus
+    this.baseRadius = 4.0, // Ukuran dasar partikel
+    this.trailLength = 6, // Trail pendek tapi terlihat
+    this.pulseFrequency = 2.0, // Frekuensi pulsasi yang menarik
+    this.pulseAmplitude = 0.5, // Amplitudo pulsasi moderate
+    this.orbitOffset = 6.0, // Jarak orbit dari perimeter
+    this.orbitVariation = 4.0, // Variasi jarak untuk gelombang
+    this.trailFade = 0.8, // Trail yang memudar cepat
+
+    this.enableHueTilt = false, // Default dinonaktifkan sesuai permintaan
+    this.hueTiltRange = 1.0, // Gradasi warna penuh 360°
+    this.saturationBoost = 1.2, // Tingkatkan sedikit saturasi
+    this.brightnessBoost = 1.1, // Tingkatkan sedikit kecerahan
+    this.glowEffect = true, // Aktifkan efek glow
+    this.glowSize = 2.0, // Ukuran glow 2x ukuran partikel
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+
+    // Buat rect untuk perimeter
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    // Tampilkan trail partikel (dari yang paling transparan ke yang paling solid)
+    for (int trail = trailLength.toInt(); trail >= 0; trail--) {
+      final trailProgress = (progress - (trail * 0.01)) % 1.0;
+      if (trailProgress < 0) continue;
+
+      final trailOpacity =
+          math.pow(1 - (trail / (trailLength + 1)), trailFade).toDouble();
+
+      // Gambar semua partikel dalam satu trail
+      for (int i = 0; i < particleCount; i++) {
+        final particleProgress = (trailProgress + (i / particleCount)) % 1.0;
+
+        // Posisi dasar di perimeter
+        final perimeterRatio =
+            (particleProgress + 0.5) % 1.0; // Offset 0.5 untuk efek menarik
+        final perimeterPos = _getPositionOnPerimeter(rect, perimeterRatio);
+
+        // Pulsasi berbasis waktu dan posisi
+        final pulseFactor = 1.0 +
+            pulseAmplitude *
+                math.sin(particleProgress * math.pi * 2 * pulseFrequency +
+                    i * (math.pi * 2 / particleCount));
+
+        // Variasi orbit gelombang (bergerak masuk-keluar dari perimeter)
+        final orbitWave = orbitVariation *
+            math.sin(particleProgress * math.pi * 4 +
+                i * (math.pi * 2 / particleCount));
+
+        // Arah dari pusat ke perimeter
+        final dirVector = perimeterPos - c;
+        final distance = dirVector.distance;
+        final direction = distance > 0
+            ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+            : Offset(0, 0);
+
+        // Posisi akhir partikel (dengan orbit offset + variasi)
+        final orbitDistance = (orbitOffset + orbitWave) * radiusMultiplier;
+        final pos = perimeterPos + direction * orbitDistance;
+
+        // Radius partikel akhir (dengan pulsasi dan multiplier)
+        final radius = baseRadius * pulseFactor * radiusMultiplier;
+
+        // Warna dengan hue tilt dan opacity untuk trail
+        final particleOpacity = trailOpacity.clamp(0.0, 1.0);
+        Color particleColor = color;
+
+        if (enableHueTilt) {
+          final hsl = HSLColor.fromColor(color);
+
+          // Gradasi warna berputar sepanjang perimeter
+          final hueShift = perimeterRatio * 360 * hueTiltRange;
+
+          // Brightness bervariasi dengan pulsasi
+          final brightnessFactor = (pulseFactor - 1.0) * 0.2 + 1.0;
+
+          particleColor = hsl
+              .withHue((hsl.hue + hueShift) % 360)
+              .withSaturation(
+                  (hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+              .withLightness(
+                  (hsl.lightness * brightnessBoost * brightnessFactor)
+                      .clamp(0.0, 1.0))
+              .toColor();
+        }
+
+        particleColor = particleColor.withOpacity(particleOpacity);
+
+        // Gambar glow effect (jika diaktifkan)
+        if (glowEffect) {
+          canvas.drawCircle(
+              pos,
+              radius * glowSize,
+              Paint()
+                ..color = particleColor.withOpacity(particleOpacity * 0.3)
+                ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.8));
+        }
+
+        // Gambar partikel utama
+        canvas.drawCircle(pos, radius, Paint()..color = particleColor);
+      }
+    }
+  }
+
+  // Helper untuk mendapatkan posisi pada perimeter
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    // Sisi atas
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    }
+    // Sisi kanan
+    else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    }
+    // Sisi bawah
+    else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    }
+    // Sisi kiri
+    else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterPulsatingOrbitAnimator ||
+      old.particleCount != particleCount ||
+      old.baseRadius != baseRadius ||
+      old.trailLength != trailLength ||
+      old.pulseFrequency != pulseFrequency ||
+      old.pulseAmplitude != pulseAmplitude ||
+      old.orbitOffset != orbitOffset ||
+      old.orbitVariation != orbitVariation ||
+      old.trailFade != trailFade ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost ||
+      old.brightnessBoost != brightnessBoost ||
+      old.glowEffect != glowEffect ||
+      old.glowSize != glowSize;
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+
+  @override
+  double getOuterPadding() =>
+      orbitOffset +
+      orbitVariation +
+      baseRadius * (1 + pulseAmplitude) * glowSize +
+      10;
+}
+
+class PerimeterBlossomOrbitAnimator implements EffectAnimator {
+  // Parameter utama
+  final int particleCount;
+  final double baseRadius;
+  final double orbitRadius;
+  final double blossomSpeed;
+  final double orbitSpeed;
+
+  // Parameter detail
+  final double particleVariation;
+  final double staggerDelay;
+  final double endScale;
+
+  // Parameter visual
+  final bool enableGlow;
+  final double glowIntensity;
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  // Fase animasi
+  static const double _blossomEnd = 0.4;
+  static const double _orbitTransitionEnd = 0.6;
+
+  PerimeterBlossomOrbitAnimator({
+    this.particleCount = 20,
+    this.baseRadius = 5.0,
+    this.orbitRadius = 10.0,
+    this.blossomSpeed = 1.0,
+    this.orbitSpeed = 0.7,
+    this.particleVariation = 0.3,
+    this.staggerDelay = 0.02,
+    this.endScale = 1.2,
+    this.enableGlow = true,
+    this.glowIntensity = 0.6,
+    this.enableHueTilt = false, // Default diatur ke false
+    this.hueTiltRange = 0.8,
+    this.saturationBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    final rnd = math.Random(42); // Seed tetap untuk animasi konsisten
+    final actualOrbitRadius = orbitRadius * radiusMultiplier;
+
+    // Gambar setiap partikel
+    for (int i = 0; i < particleCount; i++) {
+      // Delay berbasis indeks untuk efek stagger
+      final delay = i * staggerDelay;
+      final adjustedProgress =
+          (progress * blossomSpeed - delay).clamp(0.0, 1.0);
+
+      // Jika belum waktunya muncul, lewati
+      if (adjustedProgress <= 0) continue;
+
+      // Posisi awal di perimeter (untuk fase orbit)
+      final perimeterRatio = i / particleCount;
+      final initialPeriPos = _getPositionOnPerimeter(rect, perimeterRatio);
+
+      // Arah dari pusat ke perimeter
+      final dirVector = initialPeriPos - c;
+      final distance = dirVector.distance;
+      final direction = distance > 0
+          ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+          : Offset(0, 0);
+
+      // Variasi acak untuk jalur dan ukuran
+      final angleFactor = 0.5 + rnd.nextDouble() * particleVariation;
+      final sizeFactor = 0.8 + rnd.nextDouble() * particleVariation * 0.4;
+
+      // Variasi arah berdasarkan indeks dan randomness
+      final angle = (i / particleCount) * math.pi * 2 + rnd.nextDouble() * 0.3;
+      final varDirection =
+          Offset(math.cos(angle) * angleFactor, math.sin(angle) * angleFactor);
+
+      // Posisi akhir partikel berbasis fase animasi
+      Offset pos;
+      double particleScale;
+
+      if (adjustedProgress < _blossomEnd) {
+        // Fase 1: Blossom dari tengah
+        final blossomRatio = adjustedProgress / _blossomEnd;
+        final easeRatio = _easeOutQuad(blossomRatio);
+
+        // Arah bergerak dari pusat ke perimeter dengan variasi
+        final blendedDir = _blendVectors(varDirection, direction, blossomRatio);
+
+        // Jarak dari pusat berbasis pada progress
+        final moveDistance = distance * easeRatio * 0.85;
+
+        // Posisi akhir
+        pos = c + blendedDir * moveDistance;
+
+        // Skala: tumbuh dari kecil
+        particleScale = 0.3 + blossomRatio * 0.7;
+      } else if (adjustedProgress < _orbitTransitionEnd) {
+        // Fase 2: Transisi ke orbit
+        final transitionRatio = (adjustedProgress - _blossomEnd) /
+            (_orbitTransitionEnd - _blossomEnd);
+        final easeRatio = _easeInOutCubic(transitionRatio);
+
+        // Posisi awal (akhir dari fase blossom)
+        final startPos = c + varDirection * (distance * 0.85);
+
+        // Posisi akhir di orbit
+        final targetPos = initialPeriPos + direction * actualOrbitRadius;
+
+        // Interpolasi dari posisi blossom ke posisi orbit
+        pos = Offset.lerp(startPos, targetPos, easeRatio)!;
+
+        // Skala: konsisten selama transisi
+        particleScale = 1.0;
+      } else {
+        // Fase 3: Orbit di perimeter
+        // Progress untuk orbit (kecepatan berbeda dari blossom)
+        final orbitProgress = (progress * orbitSpeed) % 1.0;
+
+        // Posisi di sepanjang perimeter dengan orbit
+        final orbitRatio = (perimeterRatio + orbitProgress) % 1.0;
+        final periPos = _getPositionOnPerimeter(rect, orbitRatio);
+
+        // Arah vektor untuk orbit
+        final orbitDir = periPos - c;
+        final orbitDist = orbitDir.distance;
+        final orbitDirection = orbitDist > 0
+            ? Offset(orbitDir.dx / orbitDist, orbitDir.dy / orbitDist)
+            : Offset(0, 0);
+
+        // Posisi akhir: perimeter + offset orbit
+        pos = periPos + orbitDirection * actualOrbitRadius;
+
+        // Skala: sedikit membesar di orbit
+        particleScale = endScale;
+      }
+
+      // Ukuran partikel akhir
+      final radius = baseRadius * radiusMultiplier * sizeFactor * particleScale;
+
+      // Warna partikel
+      Color particleColor = color;
+
+      // Terapkan hueTilt jika diaktifkan
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = perimeterRatio * 360 * hueTiltRange;
+        particleColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+
+      // Gambar glow jika diaktifkan
+      if (enableGlow) {
+        final glowRadius = radius * 2.0;
+        canvas.drawCircle(
+            pos,
+            glowRadius,
+            Paint()
+              ..color = particleColor.withOpacity(glowIntensity)
+              ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.8));
+      }
+
+      // Gambar partikel
+      canvas.drawCircle(pos, radius, Paint()..color = particleColor);
+    }
+  }
+
+  // Blend dua vektor dengan rasio
+  Offset _blendVectors(Offset v1, Offset v2, double ratio) {
+    return Offset(v1.dx * (1 - ratio) + v2.dx * ratio,
+        v1.dy * (1 - ratio) + v2.dy * ratio);
+  }
+
+  // Fungsi easing
+  double _easeOutQuad(double t) {
+    return t * (2 - t);
+  }
+
+  double _easeInOutCubic(double t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  // Helper untuk mendapatkan posisi pada perimeter
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+
+  @override
+  double getOuterPadding() => orbitRadius + baseRadius * endScale * 3;
+
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterBlossomOrbitAnimator ||
+      old.particleCount != particleCount ||
+      old.baseRadius != baseRadius ||
+      old.orbitRadius != orbitRadius ||
+      old.blossomSpeed != blossomSpeed ||
+      old.orbitSpeed != orbitSpeed ||
+      old.particleVariation != particleVariation ||
+      old.staggerDelay != staggerDelay ||
+      old.endScale != endScale ||
+      old.enableGlow != enableGlow ||
+      old.glowIntensity != glowIntensity ||
+      old.enableHueTilt != enableHueTilt ||
+      old.hueTiltRange != hueTiltRange ||
+      old.saturationBoost != saturationBoost;
+}
+
+class PerimeterEnergyFieldAnimator implements EffectAnimator {
+  final int lineCount;
+  final double lineWidth;
+  final double fieldDepth;
+  final double waveFrequency;
+  final double waveAmplitude;
+  final double flowSpeed;
+  final bool connectCorners;
+
+  // Warna
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+  final double opacityBase;
+
+  PerimeterEnergyFieldAnimator({
+    this.lineCount = 15,
+    this.lineWidth = 1.5,
+    this.fieldDepth = 30.0,
+    this.waveFrequency = 2.5,
+    this.waveAmplitude = 8.0,
+    this.flowSpeed = 1.0,
+    this.connectCorners = true,
+    this.enableHueTilt = true,
+    this.hueTiltRange = 0.6,
+    this.saturationBoost = 1.3,
+    this.opacityBase = 0.6,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    // Gambar field garis energi dari perimeter ke dalam
+    for (int i = 0; i < lineCount; i++) {
+      final lineRatio = i / (lineCount - 1);
+
+      // Field ini memiliki 2 komponen: garis perimeter dan garis dalam
+      // Gambar garis perimeter - mengikuti bentuk perimeter
+      final path = Path();
+      final segments = 100; // Resolusi untuk menggambar
+
+      for (int j = 0; j <= segments; j++) {
+        final segmentRatio = j / segments;
+
+        // Posisi pada perimeter
+        final basePos = _getPositionOnPerimeter(rect, segmentRatio);
+
+        // Arah ke dalam (normal)
+        final dirVector = c - basePos;
+        final distance = dirVector.distance;
+        final direction = distance > 0
+            ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+            : Offset(0, 0);
+
+        // Menambahkan gelombang mengalir
+        final wave = math.sin(
+                (segmentRatio * waveFrequency + progress * flowSpeed) *
+                    math.pi *
+                    2) *
+            waveAmplitude *
+            radiusMultiplier;
+
+        // Depth adjustment based on line ratio
+        final depth = fieldDepth * radiusMultiplier * lineRatio;
+
+        // Final position - dari perimeter, ke dalam dengan wave
+        final pos = basePos + direction * (depth + wave);
+
+        if (j == 0) {
+          path.moveTo(pos.dx, pos.dy);
+        } else {
+          path.lineTo(pos.dx, pos.dy);
+        }
+      }
+
+      // Tutup path jika perlu
+      if (connectCorners) {
+        path.close();
+      }
+
+      // Color dengan hueTilt dan opacity
+      Color lineColor = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = lineRatio * 360 * hueTiltRange;
+        lineColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+
+      // Opacity lebih tinggi untuk garis terluar
+      final opacity = opacityBase * (1 - lineRatio * 0.5);
+
+      // Gambar garis energi
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = lineColor.withOpacity(opacity)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = lineWidth * radiusMultiplier
+            ..strokeCap = StrokeCap.round);
+    }
+  }
+
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+  @override
+  double getOuterPadding() => fieldDepth + waveAmplitude + 5;
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterEnergyFieldAnimator;
+}
+
+class PerimeterParticleSwarmAnimator implements EffectAnimator {
+  final int particleCount;
+  final double particleSize;
+  final double swarmWidth;
+  final double swarmSpeed;
+  final double orbitalSpeed;
+  final bool useGlow;
+
+  // Swarm behavior
+  final double chaosLevel;
+  final double coherenceLevel;
+  final int seed;
+
+  // Colors
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  PerimeterParticleSwarmAnimator({
+    this.particleCount = 80,
+    this.particleSize = 3.0,
+    this.swarmWidth = 20.0,
+    this.swarmSpeed = 1.0,
+    this.orbitalSpeed = 0.3,
+    this.useGlow = true,
+    this.chaosLevel = 0.5,
+    this.coherenceLevel = 0.7,
+    this.seed = 42,
+    this.enableHueTilt = true,
+    this.hueTiltRange = 0.7,
+    this.saturationBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    final rnd = math.Random(seed);
+    final particlePositions = <Offset>[];
+    final particleAngles = <double>[];
+    final particleSizes = <double>[];
+    final particleOffsets = <double>[];
+
+    // Pergerakan orbital sepanjang perimeter
+    final orbitProgress = progress * orbitalSpeed;
+
+    // Initialize particles - tetap untuk konsistensi animasi
+    if (particlePositions.isEmpty) {
+      for (int i = 0; i < particleCount; i++) {
+        particleAngles.add(rnd.nextDouble() * math.pi * 2);
+        particleSizes.add(0.5 + rnd.nextDouble() * 1.0);
+        particleOffsets.add(rnd.nextDouble());
+      }
+    }
+
+    // Update dan gambar semua partikel
+    for (int i = 0; i < particleCount; i++) {
+      // Basis pergerakan swarm
+      final baseProgress = (progress * swarmSpeed + particleOffsets[i]) % 1.0;
+
+      // Posisi utama pada perimeter dengan orbital motion
+      final perimeterRatio = (baseProgress + orbitProgress) % 1.0;
+      final perimeterPos = _getPositionOnPerimeter(rect, perimeterRatio);
+
+      // Arah normal
+      final dirVector = perimeterPos - c;
+      final distance = dirVector.distance;
+      final direction = distance > 0
+          ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+          : Offset(0, 0);
+
+      // Tambahkan chaos/randomness ke posisi partikel
+      final angle = particleAngles[i] + baseProgress * math.pi * 2 * chaosLevel;
+      final chaosX =
+          math.cos(angle) * swarmWidth * radiusMultiplier * chaosLevel;
+      final chaosY =
+          math.sin(angle) * swarmWidth * radiusMultiplier * chaosLevel;
+
+      // Tambahkan coherence (tetap dekat perimeter)
+      final swarmDepth = swarmWidth * radiusMultiplier * coherenceLevel;
+      final coherenceOffset = direction * swarmDepth;
+
+      // Posisi akhir
+      final pos = perimeterPos + coherenceOffset + Offset(chaosX, chaosY);
+
+      // Warna dengan hueTilt
+      Color particleColor = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = perimeterRatio * 360 * hueTiltRange;
+        particleColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+
+      // Ukuran berbasis pada particleSizes
+      final size = particleSize * particleSizes[i] * radiusMultiplier;
+
+      // Gambar glow jika diaktifkan
+      if (useGlow) {
+        canvas.drawCircle(
+            pos,
+            size * 2.0,
+            Paint()
+              ..color = particleColor.withOpacity(0.3)
+              ..maskFilter = MaskFilter.blur(BlurStyle.normal, size * 0.8));
+      }
+
+      // Gambar partikel
+      canvas.drawCircle(pos, size, Paint()..color = particleColor);
+    }
+  }
+
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+  @override
+  double getOuterPadding() => swarmWidth * (1 + chaosLevel) + particleSize * 2;
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterParticleSwarmAnimator;
+}
+
+class PerimeterGradientShimmerAnimator implements EffectAnimator {
+  final double shimmerWidth;
+  final double shimmerSpeed;
+  final double shimmerCount;
+  final double shimmerOffset;
+  final bool gradientPerimeter;
+
+  // Effects
+  final bool useBlur;
+  final double blurRadius;
+
+  // Colors
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+  final double brightnessBoost;
+
+  PerimeterGradientShimmerAnimator({
+    this.shimmerWidth = 30.0,
+    this.shimmerSpeed = 1.0,
+    this.shimmerCount = 2.0,
+    this.shimmerOffset = 5.0,
+    this.gradientPerimeter = true,
+    this.useBlur = true,
+    this.blurRadius = 8.0,
+    this.enableHueTilt = true,
+    this.hueTiltRange = 1.0, // Full rainbow
+    this.saturationBoost = 1.4,
+    this.brightnessBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    final width = shimmerWidth * radiusMultiplier;
+    final offset = shimmerOffset * radiusMultiplier;
+
+    // Buat gradient colors jika hueTilt diaktifkan
+    final List<Color> shimmerColors = [];
+    final List<double> shimmerStops = [];
+
+    if (enableHueTilt) {
+      final steps = 12; // Lebih banyak steps = gradient lebih halus
+      for (int i = 0; i <= steps; i++) {
+        final ratio = i / steps;
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = ratio * 360 * hueTiltRange;
+
+        final adjustedColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .withLightness((hsl.lightness * brightnessBoost).clamp(0.0, 1.0))
+            .toColor();
+
+        shimmerColors.add(adjustedColor);
+        shimmerStops.add(ratio);
+      }
+    } else {
+      // Gradient sederhana jika hueTilt dinonaktifkan
+      shimmerColors.add(color);
+      shimmerColors.add(color.withOpacity(0.3));
+      shimmerColors.add(color);
+
+      shimmerStops.add(0.0);
+      shimmerStops.add(0.5);
+      shimmerStops.add(1.0);
+    }
+
+    // Gambar shimmer untuk setiap shimmerCount
+    for (int i = 0; i < shimmerCount; i++) {
+      final shimmerProgress =
+          ((progress * shimmerSpeed) + (i / shimmerCount)) % 1.0;
+
+      // Create path untuk shimmer
+      final path = Path();
+      final segments = 100; // Resolution untuk menggambar
+
+      for (int j = 0; j <= segments; j++) {
+        final segmentRatio = j / segments;
+
+        // Posisi basis pada perimeter
+        final basePos = _getPositionOnPerimeter(rect, segmentRatio);
+
+        // Arah normal ke dalam
+        final dirVector = c - basePos;
+        final distance = dirVector.distance;
+        final direction = distance > 0
+            ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+            : Offset(0, 0);
+
+        // Posisi dengan offset ke dalam
+        final pos = basePos + direction * offset;
+
+        if (j == 0) {
+          path.moveTo(pos.dx, pos.dy);
+        } else {
+          path.lineTo(pos.dx, pos.dy);
+        }
+      }
+
+      // Close path
+      path.close();
+
+      // Buat shader untuk shimmer
+      Paint shimmerPaint;
+
+      if (gradientPerimeter) {
+        // Sweep gradient mengikuti perimeter
+        final Gradient gradient = SweepGradient(
+          center: Alignment.center,
+          colors: shimmerColors,
+          stops: shimmerStops,
+          startAngle: 0,
+          endAngle: math.pi * 2,
+          transform: GradientRotation(shimmerProgress * math.pi * 2),
+        );
+
+        shimmerPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width
+          ..shader = gradient.createShader(rect);
+      } else {
+        // Simple color
+        shimmerPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width
+          ..color = color;
+      }
+
+      // Tambahkan blur jika diaktifkan
+      if (useBlur) {
+        shimmerPaint.maskFilter =
+            MaskFilter.blur(BlurStyle.normal, blurRadius * radiusMultiplier);
+      }
+
+      // Gambar shimmer
+      canvas.drawPath(path, shimmerPaint);
+    }
+  }
+
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+  @override
+  double getOuterPadding() => shimmerOffset + shimmerWidth + blurRadius;
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterGradientShimmerAnimator;
+}
+
+class PerimeterSparkleTrailAnimator implements EffectAnimator {
+  final int particleCount;
+  final double baseRadius;
+  final double sparkleFrequency;
+  final double sparkleSize;
+  final double trailLength;
+  final double orbitDistance;
+  final bool randomSparkle;
+
+  // Warna
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+
+  PerimeterSparkleTrailAnimator({
+    this.particleCount = 12,
+    this.baseRadius = 3.0,
+    this.sparkleFrequency = 3.0,
+    this.sparkleSize = 1.8,
+    this.trailLength = 8.0,
+    this.orbitDistance = 8.0,
+    this.randomSparkle = true,
+    this.enableHueTilt = true,
+    this.hueTiltRange = 0.8,
+    this.saturationBoost = 1.3,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+    final rnd = math.Random(42);
+
+    for (int i = 0; i < particleCount; i++) {
+      final particleRatio = i / particleCount;
+      final particleProgress = (progress + particleRatio) % 1.0;
+
+      // Posisi pada perimeter
+      final perimeterPos = _getPositionOnPerimeter(rect, particleRatio);
+
+      // Arah normal
+      final dirVector = perimeterPos - c;
+      final distance = dirVector.distance;
+      final direction = distance > 0
+          ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+          : Offset(0, 0);
+
+      // Posisi akhir
+      final pos = perimeterPos + direction * (orbitDistance * radiusMultiplier);
+
+      // Warna untuk partikel utama
+      Color particleColor = color;
+      if (enableHueTilt) {
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = particleRatio * 360 * hueTiltRange;
+        particleColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+      }
+
+      // Gambar partikel utama
+      final baseRad = baseRadius * radiusMultiplier;
+      canvas.drawCircle(pos, baseRad, Paint()..color = particleColor);
+
+      // Gambar trail dengan sparkles
+      for (int t = 1; t <= trailLength; t++) {
+        final trailRatio = t / trailLength;
+        final trailPos = _getPositionOnPerimeter(
+            rect, (particleRatio - (trailRatio * 0.2)) % 1.0);
+
+        final trailDir = trailPos - c;
+        final trailDist = trailDir.distance;
+        final trailDirection = trailDist > 0
+            ? Offset(trailDir.dx / trailDist, trailDir.dy / trailDist)
+            : Offset(0, 0);
+
+        final finalTrailPos =
+            trailPos + trailDirection * (orbitDistance * radiusMultiplier);
+
+        // Opacity menurun untuk trail
+        final opacity = (1 - trailRatio) * 0.7;
+
+        // Ukuran sparkle dengan variasi
+        final shouldSparkle = randomSparkle
+            ? rnd.nextDouble() < (1 - trailRatio) * 0.7
+            : math.sin(trailRatio * sparkleFrequency * math.pi) > 0.7;
+
+        if (shouldSparkle) {
+          final sparkleRad = baseRad * sparkleSize * (1 - trailRatio * 0.6);
+          final sparkleColor = particleColor.withOpacity(opacity * 1.5);
+
+          // Gambar sparkle dengan glow
+          canvas.drawCircle(
+              finalTrailPos,
+              sparkleRad * 1.6,
+              Paint()
+                ..color = sparkleColor.withOpacity(opacity * 0.3)
+                ..maskFilter =
+                    MaskFilter.blur(BlurStyle.normal, sparkleRad * 0.6));
+
+          canvas.drawCircle(
+              finalTrailPos, sparkleRad, Paint()..color = sparkleColor);
+        } else {
+          // Gambar titik trail normal
+          canvas.drawCircle(finalTrailPos, baseRad * (1 - trailRatio * 0.8),
+              Paint()..color = particleColor.withOpacity(opacity));
+        }
+      }
+    }
+  }
+
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+  @override
+  double getOuterPadding() => orbitDistance + baseRadius * sparkleSize * 3;
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterSparkleTrailAnimator;
+}
+
+class PerimeterRainbowRibbonAnimator implements EffectAnimator {
+  final double ribbonWidth;
+  final double ribbonAmplitude;
+  final double ribbonFrequency;
+  final double ribbonOffset;
+  final int segments;
+  final double glowIntensity;
+
+  // Colors
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double hueCycles;
+  final double saturationBoost;
+
+  PerimeterRainbowRibbonAnimator({
+    this.ribbonWidth = 6.0,
+    this.ribbonAmplitude = 4.0,
+    this.ribbonFrequency = 3.0,
+    this.ribbonOffset = 8.0,
+    this.segments = 100,
+    this.glowIntensity = 0.4,
+    this.enableHueTilt = true,
+    this.hueTiltRange = 1.0,
+    this.hueCycles = 2.0,
+    this.saturationBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    final path = Path();
+    final width = ribbonWidth * radiusMultiplier;
+
+    // Gambar ribbon sepanjang perimeter
+    for (int i = 0; i <= segments; i++) {
+      final ratio = i / segments;
+      final perimeterPos = _getPositionOnPerimeter(rect, ratio);
+
+      // Arah normal dari pusat ke perimeter
+      final dirVector = perimeterPos - c;
+      final distance = dirVector.distance;
+      final direction = distance > 0
+          ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+          : Offset(0, 0);
+
+      // Buat efek bergelombang
+      final wave =
+          math.sin((ratio * ribbonFrequency + progress) * math.pi * 2) *
+              ribbonAmplitude *
+              radiusMultiplier;
+
+      final offset = (ribbonOffset + wave) * radiusMultiplier;
+      final pos = perimeterPos + direction * offset;
+
+      if (i == 0) {
+        path.moveTo(pos.dx, pos.dy);
+      } else {
+        path.lineTo(pos.dx, pos.dy);
+      }
+    }
+
+    // Gambar ribbon dengan glow
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 0.5);
+
+    // Jika enableHueTilt, gunakan gradient untuk ribbon
+    if (enableHueTilt) {
+      final gradientColors = <Color>[];
+      final gradientStops = <double>[];
+
+      // Buat gradient colors
+      for (int i = 0; i <= segments; i++) {
+        final ratio = i / segments;
+        final hsl = HSLColor.fromColor(color);
+        final hueShift = (ratio * hueCycles) * 360 * hueTiltRange;
+
+        final adjustedColor = hsl
+            .withHue((hsl.hue + hueShift) % 360)
+            .withSaturation((hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+            .toColor();
+
+        gradientColors.add(adjustedColor);
+        gradientStops.add(ratio);
+      }
+
+      // Buat shader untuk gradient sepanjang path
+      final shader = SweepGradient(
+        center: Alignment.center,
+        colors: gradientColors,
+        stops: gradientStops,
+        startAngle: 0,
+        endAngle: math.pi * 2,
+        transform: GradientRotation(progress * math.pi * 2),
+      ).createShader(rect);
+
+      paint.shader = shader;
+
+      // Gambar glow effect
+      if (glowIntensity > 0) {
+        final glowPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width * 2
+          ..strokeCap = StrokeCap.round
+          ..shader = shader
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 1.5);
+
+        canvas.drawPath(
+            path, glowPaint..color = color.withOpacity(glowIntensity));
+      }
+
+      // Gambar ribbon utama
+      canvas.drawPath(path, paint);
+    } else {
+      // Non-gradient version
+      canvas.drawPath(path, paint..color = color);
+    }
+  }
+
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+  @override
+  double getOuterPadding() => ribbonOffset + ribbonAmplitude + ribbonWidth * 3;
+  @override
+  bool shouldRepaint(EffectAnimator old) =>
+      old is! PerimeterRainbowRibbonAnimator;
+}
+
+class PerimeterNeonPulseAnimator implements EffectAnimator {
+  final double pulseWidth;
+  final double pulseCount;
+  final double pulseSpeed;
+  final double pulseGap;
+  final double orbitDistance;
+  final double glowIntensity;
+
+  // Colors
+  final bool enableHueTilt;
+  final double hueTiltRange;
+  final double saturationBoost;
+  final double brightnessBoost;
+
+  PerimeterNeonPulseAnimator({
+    this.pulseWidth = 20.0,
+    this.pulseCount = 3.0,
+    this.pulseSpeed = 1.0,
+    this.pulseGap = 0.2,
+    this.orbitDistance = 8.0,
+    this.glowIntensity = 0.6,
+    this.enableHueTilt = true,
+    this.hueTiltRange = 0.5,
+    this.saturationBoost = 1.4,
+    this.brightnessBoost = 1.2,
+  });
+
+  @override
+  void paint(
+      Canvas canvas, Size size, double progress, Offset center, Color color,
+      {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
+    final c = center + positionOffset;
+    final rect = Rect.fromCenter(
+      center: c,
+      width: size.width,
+      height: size.height,
+    );
+
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final segments = 100; // Resolution for drawing
+
+    // Gambar pulse neon lights di sepanjang perimeter
+    for (int pulse = 0; pulse < pulseCount; pulse++) {
+      final pulseOffset = pulse / pulseCount;
+      final pulseProgress = (progress * pulseSpeed + pulseOffset) % 1.0;
+
+      final path = Path();
+      bool firstPoint = true;
+
+      for (int i = 0; i <= segments; i++) {
+        final segmentRatio = i / segments;
+
+        // Hitung jarak dari pusat pulse (0 to 1, dimana 0 = pusat pulse)
+        final distFromPulse = (segmentRatio - pulseProgress).abs();
+        final wrappedDist = math.min(distFromPulse, 1 - distFromPulse);
+
+        // Skip if outside pulse width
+        if (wrappedDist > pulseGap) continue;
+
+        // Get point on perimeter
+        final perimeterPos = _getPositionOnPerimeter(rect, segmentRatio);
+
+        // Intensity based on distance from pulse center
+        final intensity = 1.0 - (wrappedDist / pulseGap);
+
+        // Direction from center to perimeter
+        final dirVector = perimeterPos - c;
+        final distance = dirVector.distance;
+        final direction = distance > 0
+            ? Offset(dirVector.dx / distance, dirVector.dy / distance)
+            : Offset(0, 0);
+
+        // Final position with orbit distance
+        final orbitDist = orbitDistance * radiusMultiplier;
+        final pos = perimeterPos + direction * orbitDist;
+
+        // Build path
+        if (firstPoint) {
+          path.moveTo(pos.dx, pos.dy);
+          firstPoint = false;
+        } else {
+          path.lineTo(pos.dx, pos.dy);
+        }
+
+        // Compute color with hueTilt
+        Color pulseColor = color;
+        if (enableHueTilt) {
+          final hsl = HSLColor.fromColor(color);
+          final hueShift = segmentRatio * 360 * hueTiltRange;
+          pulseColor = hsl
+              .withHue((hsl.hue + hueShift) % 360)
+              .withSaturation(
+                  (hsl.saturation * saturationBoost).clamp(0.0, 1.0))
+              .withLightness((hsl.lightness * brightnessBoost).clamp(0.0, 1.0))
+              .toColor();
+        }
+
+        // Draw glow point
+        final glowRadius = pulseWidth * radiusMultiplier * intensity;
+        final glowOpacity = intensity * glowIntensity;
+
+        canvas.drawCircle(
+            pos,
+            glowRadius,
+            Paint()
+              ..color = pulseColor.withOpacity(glowOpacity)
+              ..maskFilter =
+                  MaskFilter.blur(BlurStyle.normal, glowRadius * 0.5));
+
+        // Draw core point
+        canvas.drawCircle(pos, glowRadius * 0.3,
+            Paint()..color = pulseColor.withOpacity(intensity));
+      }
+    }
+  }
+
+  Offset _getPositionOnPerimeter(Rect rect, double ratio) {
+    final totalPerimeter = 2 * (rect.width + rect.height);
+    final distanceAlongPerimeter = totalPerimeter * ratio;
+
+    if (distanceAlongPerimeter < rect.width) {
+      return Offset(rect.left + distanceAlongPerimeter, rect.top);
+    } else if (distanceAlongPerimeter < rect.width + rect.height) {
+      return Offset(
+          rect.right, rect.top + (distanceAlongPerimeter - rect.width));
+    } else if (distanceAlongPerimeter < 2 * rect.width + rect.height) {
+      return Offset(
+          rect.right - (distanceAlongPerimeter - rect.width - rect.height),
+          rect.bottom);
+    } else {
+      return Offset(
+          rect.left,
+          rect.bottom -
+              (distanceAlongPerimeter - 2 * rect.width - rect.height));
+    }
+  }
+
+  @override
+  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  @override
+  double getDefaultRadiusMultiplier() => 1.0;
+  @override
+  double getOuterPadding() => orbitDistance + pulseWidth * 2;
+  @override
+  bool shouldRepaint(EffectAnimator old) => old is! PerimeterNeonPulseAnimator;
+}
 
 class PerimeterMultiRingOrbitAnimator implements EffectAnimator {
   // ─── konfigurasi partikel ───

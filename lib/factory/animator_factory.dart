@@ -4488,9 +4488,42 @@ class PerimeterBounceAnimator extends BounceOutwardAnimator {
 class AnimatorFactory {
   static EffectAnimator createAnimator(AnimationUndergroundType type) {
     switch (type) {
+      case AnimationUndergroundType.perimeterPulseCascadeAnimator:
+        return PerimeterPulseCascadeAnimator(
+          enableHueTilt: false,
+        );
+      case AnimationUndergroundType.perimeterConvergeBurstAnimator:
+        return PerimeterConvergeBurstAnimator(
+          enableHueTilt: false,
+        );
+      // Animator perimeter tambahan
+      case AnimationUndergroundType.perimeterPulsatingOrbit:
+        return PerimeterPulsatingOrbitAnimator(enableHueTilt: false);
+      case AnimationUndergroundType.perimeterSparkleTrail:
+        return PerimeterSparkleTrailAnimator(enableHueTilt: false);
+      case AnimationUndergroundType.perimeterRainbowRibbon:
+        return PerimeterRainbowRibbonAnimator(enableHueTilt: false);
+      case AnimationUndergroundType.perimeterNeonPulse:
+        return PerimeterNeonPulseAnimator(enableHueTilt: false);
+      case AnimationUndergroundType.perimeterEnergyField:
+        return PerimeterEnergyFieldAnimator(enableHueTilt: false);
+      case AnimationUndergroundType.perimeterParticleSwarm:
+        return PerimeterParticleSwarmAnimator(enableHueTilt: false);
+      case AnimationUndergroundType.perimeterGradientShimmer:
+        return PerimeterGradientShimmerAnimator(enableHueTilt: false);
+
+      // Animator perimeter blossoming khusus untuk drop target
+      case AnimationUndergroundType.perimeterBlossomOrbit:
+        return PerimeterBlossomOrbitAnimator(
+          particleCount: 20,
+          baseRadius: 5.0,
+          orbitRadius: 10.0,
+          blossomSpeed: 1.0,
+          enableHueTilt: false,
+        );
       // Animator perimeter baru
       case AnimationUndergroundType.perimeterRadialBurst:
-        return PerimeterRadialBurstAnimator();
+        return PerimeterGradientShimmerAnimator();
       case AnimationUndergroundType.perimeterShapeExplosion:
         return PerimeterShapeExplosionAnimator();
       case AnimationUndergroundType.perimeterShapeImplode:

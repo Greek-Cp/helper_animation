@@ -14,6 +14,8 @@ class _AnimationDemoState extends State<AnimationDemo>
     with TickerProviderStateMixin {
   // Basic animation parameters
   AnimationUndergroundType _currentType = AnimationUndergroundType.firework;
+  DragFeedbackAnim _currentTypeDraggable = DragFeedbackAnim.jellyWobble;
+
   AnimationPosition _position = AnimationPosition.outside;
   Color _effectColor = const Color(0xFF8BB3C5);
 
@@ -352,10 +354,10 @@ class _AnimationDemoState extends State<AnimationDemo>
                           ),
                         ),
                       ),
-                    ),
+                    ).animationDraggableFeedback(type: _currentTypeDraggable),
                     child: Container(
-                      width: 700,
-                      height: 50,
+                      width: 100,
+                      height: 100,
                       decoration: BoxDecoration(
                         color: _effectColor,
                         borderRadius: BorderRadius.circular(20),
@@ -553,6 +555,36 @@ class _AnimationDemoState extends State<AnimationDemo>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Animation Type Dropdown
+        _buildSettingRow(
+          'Animation Draggable',
+          DropdownButton<DragFeedbackAnim>(
+            value: _currentTypeDraggable,
+            isExpanded: true,
+            dropdownColor: Colors.grey.shade800,
+            underline: Container(
+              height: 1,
+              color: Colors.deepPurple.shade200,
+            ),
+            style: const TextStyle(color: Colors.white),
+            onChanged: (DragFeedbackAnim? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _currentTypeDraggable = newValue;
+                });
+              }
+            },
+            items: DragFeedbackAnim.values.map((DragFeedbackAnim type) {
+              return DropdownMenuItem<DragFeedbackAnim>(
+                value: type,
+                child: Text(
+                  type.toString().split('.').last,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
         _buildSettingRow(
           'Animation Type',
           DropdownButton<AnimationUndergroundType>(
@@ -1307,14 +1339,6 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              childWhenDragging: Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               child: Container(
