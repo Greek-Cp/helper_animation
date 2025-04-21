@@ -971,11 +971,7 @@ class _PulseFeedbackState extends State<_PulseFeedback>
       scale: Tween(begin: 1.0, end: 1.1)
           .animate(CurvedAnimation(parent: _ctl, curve: Curves.easeInOut)),
       child: widget.child,
-    ).withEffectAnimation(
-        animationType: AnimationUndergroundType.bounceOutward,
-        touchEnabled: true,
-        autoAnimate: true,
-        customOffset: Offset.zero);
+    );
   }
 }
 
