@@ -77,7 +77,14 @@ class _HomePageState extends State<HomePage> {
                 category: SoundCategory.clickEvent,
                 sound: ClickSound.gameClick,
               ),
-
+//             double maxFontSize = 100.0; // Absolute maximum size
+//             double maxFontSize = 100.0; // Absolute maximum siz
+              Container(
+                child: Text("Click Me"),
+              ).addSound(
+                category: SoundCategory.notification,
+                sound: NotificationSound.retroArcade,
+              ),
               const SizedBox(height: 20),
 
               // Tombol dengan suara custom dan controller eksternal

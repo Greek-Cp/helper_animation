@@ -19,3 +19,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/bgm/
+    - assets/sounds/click/
+    - assets/sounds/notification/
+    - assets/sounds/sfx/

@@ -232,7 +232,8 @@ class SoundController {
   SoundCategory? get currentCategory => _currentCategory;
 }
 
-/// Global sound manager to handle all audio across the app
+const _assetPrefix = 'packages/helper_animation/';
+
 class SoundManager {
   // Singleton pattern
   static final SoundManager instance = SoundManager._internal();
@@ -241,26 +242,29 @@ class SoundManager {
 
   // Map asset paths for each sound enum
   final Map<ClickSound, String> clickSoundPaths = {
-    ClickSound.gameClick: 'assets/sounds/click/mixkit-game-click-1114.wav',
-    ClickSound.selectClick: 'assets/sounds/click/mixkit-select-click-1109.wav',
+    ClickSound.gameClick:
+        '${_assetPrefix}assets/sounds/click/mixkit-game-click-1114.wav',
+    ClickSound.selectClick:
+        '${_assetPrefix}assets/sounds/click/mixkit-select-click-1109.wav',
   };
 
   final Map<BGMSound, String> bgmSoundPaths = {
     BGMSound.birdsSinging:
-        'assets/sounds/bgm/mixkit-little-birds-singing-in-the-trees-17.wav',
+        '${_assetPrefix}assets/sounds/bgm/mixkit-little-birds-singing-in-the-trees-17.wav',
     BGMSound.fluteMusic:
-        'assets/sounds/bgm/mixkit-melodical-flute-music-notification-2310.wav',
+        '${_assetPrefix}assets/sounds/bgm/mixkit-melodical-flute-music-notification-2310.wav',
   };
 
   final Map<SFXSound, String> sfxSoundPaths = {
-    SFXSound.airWoosh: 'assets/sounds/sfx/mixkit-air-woosh-1489.wav',
+    SFXSound.airWoosh:
+        '${_assetPrefix}assets/sounds/sfx/mixkit-air-woosh-1489.wav',
   };
 
   final Map<NotificationSound, String> notificationSoundPaths = {
     NotificationSound.retroArcade:
-        'assets/sounds/notification/mixkit-retro-arcade-casino-notification-211.wav',
+        '${_assetPrefix}assets/sounds/notification/mixkit-retro-arcade-casino-notification-211.wav',
     NotificationSound.mysteryAlert:
-        'assets/sounds/notification/mixkit-video-game-mystery-alert-234.wav',
+        '${_assetPrefix}assets/sounds/notification/mixkit-video-game-mystery-alert-234.wav',
   };
 
   // Store all active widget sound controllers
@@ -367,7 +371,6 @@ class SoundManager {
 
   /// Dispose all controllers
   Future<void> disposeAll() async {
-    // Dispose all widget sound controllers that we own
     for (final data in _widgetSoundControllers.values) {
       if (!data.isExternalController) {
         await data.controller.dispose();
@@ -375,7 +378,6 @@ class SoundManager {
     }
     _widgetSoundControllers.clear();
 
-    // Dispose all global BGM controllers
     for (final controller in _globalBGMControllers.values) {
       await controller.dispose();
     }
