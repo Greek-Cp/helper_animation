@@ -39,25 +39,94 @@ class GameInstructionSet extends StatelessWidget {
     const defaultTextAlign = TextAlign.center;
     const defaultTextHeight = 1.15;
 
-    // Use SingleChildScrollView to enable scrolling
     return Container(
       width: double.infinity,
+      height: 80, // Default height of 80
       margin: margin ?? defaultMargin,
       padding: padding ?? defaultPadding,
       decoration: BoxDecoration(
         color: backgroundColor ?? defaultBackgroundColor,
         borderRadius: borderRadius ?? defaultBorderRadius,
       ),
-      child: SingleChildScrollView(
-        child: Text(
-          text,
-          textAlign: textAlign ?? defaultTextAlign,
-          style: TextStyle(
-            fontWeight: fontWeight ?? defaultFontWeight,
-            fontSize: fontSize ?? defaultFontSize,
-            color: textColor ?? defaultTextColor,
-            height: textHeight ?? defaultTextHeight,
-          ),
+      clipBehavior: Clip.hardEdge, // Force clipping to prevent any overflow
+      child: Center(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Calculate available space (accounting for padding)
+            final availableWidth = constraints.maxWidth;
+            final availableHeight = constraints.maxHeight;
+
+            // Start with default font size
+            double calculatedFontSize = fontSize ?? defaultFontSize;
+            double minFontSize = 5.0; // Absolute minimum size
+
+            // Binary search for the optimal font size
+            double maxSize = calculatedFontSize;
+            double minSize = minFontSize;
+
+            // Function to check if text fits at a given size
+            bool doesTextFit(double size) {
+              final textStyle = TextStyle(
+                fontWeight: fontWeight ?? defaultFontWeight,
+                fontSize: size,
+                color: textColor ?? defaultTextColor,
+                height: textHeight ?? defaultTextHeight,
+              );
+
+              final textSpan = TextSpan(
+                text: text,
+                style: textStyle,
+              );
+
+              final textPainter = TextPainter(
+                text: textSpan,
+                textDirection: TextDirection.ltr,
+                textAlign: textAlign ?? defaultTextAlign,
+                maxLines: 4,
+              );
+
+              textPainter.layout(maxWidth: availableWidth);
+
+              // Strict check: must be within height AND not exceed max lines
+              return textPainter.height < availableHeight * 0.98 &&
+                  !textPainter.didExceedMaxLines;
+            }
+
+            // Binary search for largest font size that fits
+            int iterations = 0;
+            while (maxSize - minSize > 0.5 && iterations < 10) {
+              double mid = (maxSize + minSize) / 2;
+              if (doesTextFit(mid)) {
+                minSize = mid;
+              } else {
+                maxSize = mid;
+              }
+              iterations++;
+            }
+
+            // To be extra safe, take 90% of the calculated optimal size
+            calculatedFontSize = minSize * 0.9;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxWidth: availableWidth,
+                maxHeight: availableHeight,
+              ),
+              child: Text(
+                text,
+                textAlign: textAlign ?? defaultTextAlign,
+                style: TextStyle(
+                  fontWeight: fontWeight ?? defaultFontWeight,
+                  fontSize: calculatedFontSize,
+                  color: textColor ?? defaultTextColor,
+                  height: textHeight ?? defaultTextHeight,
+                ),
+                maxLines: 4,
+                overflow: TextOverflow
+                    .ellipsis, // Show ellipsis if text still doesn't fit
+              ),
+            );
+          },
         ),
       ),
     );

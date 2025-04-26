@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  just_audio: ^0.9.46
+
 
 dev_dependencies:
   flutter_test:
