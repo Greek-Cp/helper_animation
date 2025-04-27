@@ -67,6 +67,9 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              GameInstructionSet(
+                  text:
+                      "lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."),
               // Tombol dengan suara saat diklik
               ElevatedButton(
                 onPressed: () {
