@@ -42,20 +42,28 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    MeasurementsSizeApp.initialize(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Default value
     final defaultPadding = EdgeInsets.symmetric(vertical: 12, horizontal: 16);
     var defaultMargin = EdgeInsets.symmetric(vertical: 12, horizontal: 16);
     const defaultBackgroundColor = Color(0xFF285499);
-    final defaultBorderRadius = BorderRadius.circular(16);
+    const defaultTextColor = Color.fromARGB(166, 216, 248, 255);
+
+    final defaultBorderRadius = BorderRadius.circular(30);
     final defaultFontSize = MeasurementsSizeApp.calculatedSize(11);
     const defaultFontWeight = FontWeight.bold;
-    const defaultTextColor = Color.fromARGB(123, 171, 247, 255);
     const defaultTextAlign = TextAlign.center;
     const defaultTextHeight = 1.15;
 
     return Container(
       width: double.infinity,
+      height: 60, // Default height of 80
       margin: widget.margin ?? defaultMargin,
       padding: widget.padding ?? defaultPadding,
       decoration: BoxDecoration(
