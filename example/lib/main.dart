@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sound Manager Demo',
+      title: 'Sound Manager Demo ${AppSizeMinigame.borderRadiusGlobalMinigame}',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
