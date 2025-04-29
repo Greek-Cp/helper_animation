@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sound Manager Demo',
+      title: 'Sound Manager Demo ${AppSizeMinigame.borderRadiusGlobalMinigame}',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -42,84 +42,110 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // Inisialisasi SoundController untuk BGM
-    bgmController = SoundController(
-      autoPlay: true,
-      volume: 0.5,
-      loop: true,
-    );
+    // // Inisialisasi SoundController untuk BGM
+    // bgmController = SoundController(
+    //   autoPlay: true,
+    //   volume: 0.5,
+    //   loop: true,
+    // );
 
-    // Inisialisasi SoundController untuk button sound
-    buttonController = SoundController(
-      volume: 1.0,
-      autoPlay: true,
-    );
+    // // Inisialisasi SoundController untuk button sound
+    // buttonController = SoundController(
+    //   volume: 1.0,
+    //   autoPlay: true,
+    // );
   }
+
+  var defaultBackgroundColor = Color(0xFF285499);
+  var defaultTextColor = Color.fromARGB(166, 216, 248, 255);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Tambahkan BGM ke scaffold dengan global = true agar diputar di semua halaman
 
-      body: Container(
-        // Tambahkan BGM ke Container utama dengan route spesifik
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Tombol dengan suara saat diklik
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/detail');
-                },
-                child: const Text('Ke Halaman Detail'),
-              ).addSound(
-                category: SoundCategory.clickEvent,
-                sound: ClickSound.gameClick,
-              ),
-//             double maxFontSize = 100.0; // Absolute maximum size
-//             double maxFontSize = 100.0; // Absolute maximum siz
-              Container(
-                child: Text("Click Me"),
-              ).addSound(
-                category: SoundCategory.notification,
-                sound: NotificationSound.retroArcade,
-              ),
-              const SizedBox(height: 20),
+      body: Center(
+        child: Container(
+            width: 300,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                    decoration: ShapeDecoration(
+                      color: Color(0xFFA1C0F2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                            AppSizeMinigame.borderRadiusGlobalMinigame),
+                        side: BorderSide(color: Color(0xFF4D77B9), width: 3.0),
+                      ),
+                      shadows: [
+                        BoxShadow(
+                          color: Color(0xFF4D77B9),
+                          blurRadius: 0,
+                          offset: const Offset(4, 4),
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        GameInstructionSet(
+                            text: "lorem ipsum dolor sit amet,  asds ."),
+                      ],
+                    ),
+                  ),
+                )
+                // Tombol dengan suara saat diklik
+                //               ElevatedButton(
+                //                 onPressed: () {
+                //                   Navigator.pushNamed(context, '/detail');
+                //                 },
+                //                 child: const Text('Ke Halaman Detail'),
+                //               ).addSound(
+                //                 category: SoundCategory.clickEvent,
+                //                 sound: ClickSound.gameClick,
+                //               ),
+                // //             double maxFontSize = 100.0; // Absolute maximum size
+                // //             double maxFontSize = 100.0; // Absolute maximum siz
+                //               Container(
+                //                 child: Text("Click Me"),
+                //               ).addSound(
+                //                 category: SoundCategory.notification,
+                //                 sound: NotificationSound.retroArcade,
+                //               ),
+                //               const SizedBox(height: 20),
 
-              // Tombol dengan suara custom dan controller eksternal
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/settings');
-                },
-                child: const Text('Ke Halaman Settings'),
-              ).addSound(
-                category: SoundCategory.notification,
-                sound: NotificationSound.retroArcade,
-                controller: buttonController,
-              ),
+                //               // Tombol dengan suara custom dan controller eksternal
+                //               ElevatedButton(
+                //                 onPressed: () {
+                //                   Navigator.pushNamed(context, '/settings');
+                //                 },
+                //                 child: const Text('Ke Halaman Settings'),
+                //               ).addSound(
+                //                 category: SoundCategory.notification,
+                //                 sound: NotificationSound.retroArcade,
+                //                 controller: buttonController,
+                //               ),
 
-              const SizedBox(height: 20),
+                //               const SizedBox(height: 20),
 
-              // Tombol toggle suara SFX
-              ElevatedButton(
-                onPressed: () {
-                  // Memutar suara SFX menggunakan controller langsung
-                  buttonController.playSound(
-                    category: SoundCategory.sfx,
-                    sound: SFXSound.airWoosh,
-                  );
-                },
-                child: const Text('Putar SFX Air Woosh'),
-              ),
-            ],
-          ),
-        ).addBGM(
-          sound: BGMSound.birdsSinging,
-          controller: bgmController,
-          route: '/',
-          global: false, // Hanya diputar di halaman ini
-        ),
+                //               // Tombol toggle suara SFX
+                //               ElevatedButton(
+                //                 onPressed: () {
+                //                   // Memutar suara SFX menggunakan controller langsung
+                //                   buttonController.playSound(
+                //                     category: SoundCategory.sfx,
+                //                     sound: SFXSound.airWoosh,
+                //                   );
+                //                 },
+                //                 child: const Text('Putar SFX Air Woosh'),
+                //               ),
+              ],
+            )),
       ),
     );
   }

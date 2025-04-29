@@ -1286,7 +1286,8 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.2),
                     borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(
+                          AppSizeMinigame.borderRadiusGlobalMinigame),
                       bottomRight: Radius.circular(16),
                     ),
                   ),
