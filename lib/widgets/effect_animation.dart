@@ -35,7 +35,7 @@ class EffectAnimation extends StatefulWidget {
   final Offset? customOffset; // Untuk override posisi jika diperlukan
   final EffectAnimationController? controller; // Controller baru
   final bool touchEnabled; // Flag untuk mengaktifkan/menonaktifkan respons tap
-
+  final bool mixedColor;
   EffectAnimation({
     Key? key,
     required this.child,
@@ -48,6 +48,7 @@ class EffectAnimation extends StatefulWidget {
     this.position = AnimationPosition.outside,
     this.customOffset,
     this.controller,
+    this.mixedColor = false,
     this.touchEnabled = true, // Default-nya aktif
   }) : super(key: key);
 
@@ -69,7 +70,8 @@ class _EffectAnimationState extends State<EffectAnimation>
     super.initState();
 
     // Inisialisasi animator berdasarkan type
-    _animator = AnimatorFactory.createAnimator(widget.animationType);
+    _animator = AnimatorFactory.createAnimator(widget.animationType,
+        enableMixedColor: widget.mixedColor);
 
     _controller = AnimationController(
       vsync: this,
@@ -114,7 +116,8 @@ class _EffectAnimationState extends State<EffectAnimation>
 
     // Update animator jika jenisnya berubah
     if (oldWidget.animationType != widget.animationType) {
-      _animator = AnimatorFactory.createAnimator(widget.animationType);
+      _animator = AnimatorFactory.createAnimator(widget.animationType,
+          enableMixedColor: widget.mixedColor);
     }
 
     // Update controller callback jika controller berubah
@@ -253,6 +256,7 @@ extension EffectAnimationExtension on Widget {
     Offset? customOffset,
     EffectAnimationController? controller,
     bool touchEnabled = true, // Parameter baru dengan default true
+    bool enableMixedColor = false,
   }) {
     return EffectAnimation(
       effectColor: effectColor,
@@ -266,6 +270,7 @@ extension EffectAnimationExtension on Widget {
       controller: controller,
       touchEnabled: touchEnabled, // Tambahkan ke constructor
       child: this,
+      mixedColor: enableMixedColor,
     );
   }
 }

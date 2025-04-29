@@ -4486,31 +4486,33 @@ class PerimeterBounceAnimator extends BounceOutwardAnimator {
 }
 
 class AnimatorFactory {
-  static EffectAnimator createAnimator(AnimationUndergroundType type) {
+  static EffectAnimator createAnimator(AnimationUndergroundType type,
+      {bool enableMixedColor = false}) {
     switch (type) {
       case AnimationUndergroundType.perimeterPulseCascadeAnimator:
         return PerimeterPulseCascadeAnimator(
-          enableHueTilt: false,
+          enableHueTilt: enableMixedColor,
         );
       case AnimationUndergroundType.perimeterConvergeBurstAnimator:
         return PerimeterConvergeBurstAnimator(
-          enableHueTilt: false,
+          enableHueTilt: enableMixedColor,
         );
       // Animator perimeter tambahan
       case AnimationUndergroundType.perimeterPulsatingOrbit:
-        return PerimeterPulsatingOrbitAnimator(enableHueTilt: false);
+        return PerimeterPulsatingOrbitAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterSparkleTrail:
-        return PerimeterSparkleTrailAnimator(enableHueTilt: false);
+        return PerimeterSparkleTrailAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterRainbowRibbon:
-        return PerimeterRainbowRibbonAnimator(enableHueTilt: false);
+        return PerimeterRainbowRibbonAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterNeonPulse:
-        return PerimeterNeonPulseAnimator(enableHueTilt: false);
+        return PerimeterNeonPulseAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterEnergyField:
-        return PerimeterEnergyFieldAnimator(enableHueTilt: false);
+        return PerimeterEnergyFieldAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterParticleSwarm:
-        return PerimeterParticleSwarmAnimator(enableHueTilt: false);
+        return PerimeterParticleSwarmAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterGradientShimmer:
-        return PerimeterGradientShimmerAnimator(enableHueTilt: false);
+        return PerimeterGradientShimmerAnimator(
+            enableHueTilt: enableMixedColor);
 
       // Animator perimeter blossoming khusus untuk drop target
       case AnimationUndergroundType.perimeterBlossomOrbit:
@@ -4519,40 +4521,44 @@ class AnimatorFactory {
           baseRadius: 5.0,
           orbitRadius: 10.0,
           blossomSpeed: 1.0,
-          enableHueTilt: false,
+          enableHueTilt: enableMixedColor,
         );
       // Animator perimeter baru
       case AnimationUndergroundType.perimeterRadialBurst:
-        return PerimeterGradientShimmerAnimator();
+        return PerimeterGradientShimmerAnimator(
+            enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterShapeExplosion:
-        return PerimeterShapeExplosionAnimator();
+        return PerimeterShapeExplosionAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterShapeImplode:
-        return PerimeterShapeImplodeAnimator();
+        return PerimeterShapeImplodeAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterShapeRetractImplode:
-        return PerimeterShapeRetractImplodeAnimator();
+        return PerimeterShapeRetractImplodeAnimator(
+            enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterShapeExplodeOut:
-        return PerimeterShapeExplodeOutAnimator();
+        return PerimeterShapeExplodeOutAnimator(
+            enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterOrbitBloom:
-        return PerimeterOrbitBloomAnimatorV2();
+        return PerimeterOrbitBloomAnimatorV2(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterRayBurst:
-        return PerimeterRayBurstMovingAnimator();
+        return PerimeterRayBurstMovingAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterCircleBurst:
-        return PerimeterCircleBurstAnimator();
+        return PerimeterCircleBurstAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterCircleOrbitSequential:
-        return PerimeterCircleOrbitSequentialAnimator();
+        return PerimeterCircleOrbitSequentialAnimator(
+            enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterMultiRingOrbit:
-        return PerimeterMultiRingOrbitAnimator();
+        return PerimeterMultiRingOrbitAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.perimeterSequentialRingOrbit:
-        return PerimeterSequentialRingOrbitAnimator();
-
+        return PerimeterSequentialRingOrbitAnimator(
+            enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeExplode:
-        return PerimeterRadialBurstAnimator();
+        return PerimeterRadialBurstAnimator(enableColorShift: enableMixedColor);
       case AnimationUndergroundType.shapeVortex:
-        return ShapeVortexAnimator(enableHueTilt: false);
+        return ShapeVortexAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapePulse:
-        return ShapePulseAnimator(enableHueTilt: false);
+        return ShapePulseAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeWave:
-        return ShapeWaveAnimator(enableHueTilt: false);
+        return ShapeWaveAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeMorph:
         return ShapeMorphAnimator(
           enableHueTilt: false,
@@ -4560,55 +4566,55 @@ class AnimatorFactory {
           endShape: ShapeType.star,
         );
       case AnimationUndergroundType.radialBurst:
-        return RadialBurstAnimator(enableColorShift: false);
+        return RadialBurstAnimator(enableColorShift: enableMixedColor);
       case AnimationUndergroundType.bounceOutward:
-        return BounceOutwardAnimator(enableColorShift: false);
+        return BounceOutwardAnimator(enableColorShift: enableMixedColor);
       case AnimationUndergroundType.spiralOutward:
-        return SpiralOutwardAnimator(enableColorShift: false);
+        return SpiralOutwardAnimator(enableColorShift: enableMixedColor);
       case AnimationUndergroundType.radialFirework:
-        return RadialFireworkAnimator(enableColorShift: false);
+        return RadialFireworkAnimator(enableColorShift: enableMixedColor);
       case AnimationUndergroundType.firework:
-        return ShapeExplosionAnimator(enableHueTilt: false);
+        return ShapeExplosionAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.ripple:
-        return PulseWaveAnimator(enableHueTilt: false);
+        return PulseWaveAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.spiral:
-        return SpiralExplosionAnimator(enableHueTilt: false);
+        return SpiralExplosionAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeExplosion:
-        return ShapeExplosionAnimator(enableHueTilt: false);
+        return ShapeExplosionAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeImplode:
-        return ShapeImplodeAnimator(enableHueTilt: false);
+        return ShapeImplodeAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeRetractImplode:
-        return ShapeRetractImplodeAnimator(enableHueTilt: false);
+        return ShapeRetractImplodeAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.shapeExplodeOut:
-        return ShapeExplodeOutAnimator(enableHueTilt: false);
+        return ShapeExplodeOutAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.orbitBloom:
-        return OrbitBloomAnimatorV2(enableHueTilt: false);
+        return OrbitBloomAnimatorV2(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.circleBurst:
-        return CircleBurstAnimator(enableHueTilt: false);
+        return CircleBurstAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.circleBurstClean:
-        return CircleBurstCleanAnimator(enableHueTilt: false);
+        return CircleBurstCleanAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.magicDust:
-        return MagicDustAnimator(enableHueTilt: false);
+        return MagicDustAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.pixelExplosion:
-        return PixelExplosionAnimator(enableHueTilt: false);
+        return PixelExplosionAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.pulseWave:
-        return PulseWaveAnimator(enableHueTilt: false);
+        return PulseWaveAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.dotBurst:
-        return DotBurstAnimator(enableHueTilt: false);
+        return DotBurstAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.dotAbsorbBurst:
-        return DotAbsorbBurstAnimator(enableHueTilt: false);
+        return DotAbsorbBurstAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.rayLine:
-        return RayBurstMovingAnimator(enableHueTilt: false);
+        return RayBurstMovingAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.circleOrbitSequential:
-        return CircleOrbitSequentialAnimator(enableHueTilt: false);
+        return CircleOrbitSequentialAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.multiRingOrbit:
-        return MultiRingOrbitAnimator(enableHueTilt: false);
+        return MultiRingOrbitAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.sequentialRingOrbit:
-        return SequentialRingOrbitAnimator(enableHueTilt: false);
+        return SequentialRingOrbitAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.flowerCircle:
-        return FlowerCircleAnimator(enableHueTilt: false);
+        return FlowerCircleAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.magicalOrbitDots:
-        return MagicalOrbitDotsAnimator(enableHueTilt: false);
+        return MagicalOrbitDotsAnimator(enableHueTilt: enableMixedColor);
     }
   }
 }
