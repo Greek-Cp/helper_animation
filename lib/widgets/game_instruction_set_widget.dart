@@ -12,6 +12,7 @@ class GameInstructionSet extends StatefulWidget {
   final Color? textColor;
   final TextAlign? textAlign;
   final double? textHeight;
+  final double? height;
 
   const GameInstructionSet({
     super.key,
@@ -25,6 +26,7 @@ class GameInstructionSet extends StatefulWidget {
     this.textColor,
     this.textAlign,
     this.textHeight,
+    this.height,
   });
 
   @override
@@ -63,7 +65,8 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
 
     return Container(
       width: double.infinity,
-      height: 60, // Default height of 80
+      height: widget.height ??
+          MeasurementsSizeApp.calculatedSize(40), // Default height of 80
       margin: widget.margin ?? defaultMargin,
       padding: widget.padding ?? defaultPadding,
       decoration: BoxDecoration(
