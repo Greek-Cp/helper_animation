@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
 
       body: Center(
         child: Container(
-            width: 300,
+            width: double.infinity,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -94,7 +94,8 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       children: [
                         GameInstructionSet(
-                            text: "lorem ipsum dolor sit amet,  asds ."),
+                            text:
+                                "lorem ipsum dolor sit amet,  asds . sadsa maskdsa sadkmsadksa s sadsak  sadskam adsodaosm akdoask "),
                       ],
                     ),
                   ),
