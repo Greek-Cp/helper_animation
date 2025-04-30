@@ -83,10 +83,10 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
 
             // Start with default font size
             double calculatedFontSize = widget.fontSize ?? defaultFontSize;
-            double minFontSize = 5.0; // Absolute minimum size
+            double minFontSize = 18; // Absolute minimum size
 
             // Binary search for the optimal font size
-            double maxSize = calculatedFontSize;
+            double maxSize = 22;
             double minSize = minFontSize;
 
             // Function to check if text fits at a given size
@@ -146,7 +146,7 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
                   color: widget.textColor ?? defaultTextColor,
                   height: widget.textHeight ?? defaultTextHeight,
                 ),
-                maxLines: 4,
+                maxLines: 3,
                 overflow: TextOverflow
                     .ellipsis, // Show ellipsis if text still doesn't fit
               ),

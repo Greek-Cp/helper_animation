@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         GameInstructionSet(
                             text:
-                                "lorem ipsum dolor sit amet,  asds . sadsa maskdsa sadkmsadksa s sadsak  sadskam adsodaosm akdoask "),
+                                "lorem ipsum dolor sit amet asdfkj asdfkasjdf asdfklasdjf asdflkajsdf asdflkasjdf asdlfkajlaksdfj fasldkfj laksdjf "),
                       ],
                     ),
                   ),
