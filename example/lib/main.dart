@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         GameInstructionSet(
                             text:
-                                "lorem ipsum dolor sit amet,  asds . sadsa maskdsa sadkmsadksa s sadsak  sadskam adsodaosm akdoask "),
+                                "Add the fractions below asdsadasd sa asdsadas dsa sadsadsa asdsadsajuuhdsaadsa "),
                       ],
                     ),
                   ),
