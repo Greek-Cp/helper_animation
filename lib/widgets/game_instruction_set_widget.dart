@@ -6,7 +6,7 @@ class GameInstructionSet extends StatefulWidget {
   final EdgeInsets? padding, margin;
   final Color? backgroundColor, textColor;
   final BorderRadius? borderRadius;
-  final double? fontSize, textHeight;
+  final double? fontSize;
   final FontWeight? fontWeight;
   final TextAlign? textAlign;
 
@@ -21,7 +21,6 @@ class GameInstructionSet extends StatefulWidget {
     this.fontWeight,
     this.textColor,
     this.textAlign,
-    this.textHeight,
   });
 
   @override
@@ -29,9 +28,9 @@ class GameInstructionSet extends StatefulWidget {
 }
 
 class _GameInstructionSetState extends State<GameInstructionSet> {
-  static const _kMaxLines = 3;
   static const _kMaxFont = 22.0;
   static const _kMinFont = 18.0;
+  static const _kMaxLines = 3;
 
   @override
   void initState() {
@@ -49,28 +48,24 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
 
   @override
   Widget build(BuildContext context) {
-    // ——— default style ———
     const bgDefault = Color(0xFF285499);
     const textDefault = Color.fromARGB(166, 216, 248, 255);
     const weightDefault = FontWeight.bold;
     const alignDefault = TextAlign.center;
-    const lineHeightDefault = 1.28; // lebih lega
-    final borderDefault = BorderRadius.circular(30);
+    final borderDefault = BorderRadius.circular(20);
 
     final padding = widget.padding ??
         const EdgeInsets.symmetric(vertical: 12, horizontal: 16);
     final margin = widget.margin ??
         const EdgeInsets.symmetric(vertical: 12, horizontal: 16);
 
-    // font awal (clamp 18-22)
-    final double start =
-        (widget.fontSize ?? _kMaxFont).clamp(_kMinFont, _kMaxFont);
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        double low = _kMinFont, high = start, best = low;
+        //------------------------------------------------------------
+        // 1) Cari font terbesar (22→18) yg tidak melebihi 3 baris
+        //------------------------------------------------------------
+        double low = _kMinFont, high = _kMaxFont, best = low;
 
-        // helper: cek muat ≤3 baris
         bool fits(double size) {
           final tp = TextPainter(
             text: TextSpan(
@@ -78,18 +73,16 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
               style: TextStyle(
                 fontSize: size,
                 fontWeight: widget.fontWeight ?? weightDefault,
-                height: widget.textHeight ?? lineHeightDefault,
+                height: 1.2,
               ),
             ),
             maxLines: _kMaxLines,
-            textAlign: widget.textAlign ?? alignDefault,
             textDirection: TextDirection.ltr,
           )..layout(maxWidth: constraints.maxWidth - padding.horizontal);
-
           return !tp.didExceedMaxLines;
         }
 
-        // cari font terbesar yang muat
+        // binary-search
         while (high - low > .5) {
           final mid = (high + low) / 2;
           if (fits(mid)) {
@@ -99,31 +92,39 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
             high = mid;
           }
         }
+        final chosenSize = best;
 
-        final chosenSize = fits(best) ? best : _kMinFont;
-
-        // —— Hitung baris aktual —— //
-        final tp = TextPainter(
+        //------------------------------------------------------------
+        // 2) Hitung baris aktual & pilih lineHeight adaptif
+        //------------------------------------------------------------
+        final tempTp = TextPainter(
           text: TextSpan(
             text: widget.text,
-            style: TextStyle(
-              fontSize: chosenSize,
-              fontWeight: widget.fontWeight ?? weightDefault,
-              height: widget.textHeight ?? lineHeightDefault,
-            ),
+            style: TextStyle(fontSize: chosenSize, height: 1.2),
           ),
           maxLines: _kMaxLines,
-          textAlign: widget.textAlign ?? alignDefault,
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: constraints.maxWidth - padding.horizontal);
 
-        final int lineCount =
-            tp.computeLineMetrics().length.clamp(1, _kMaxLines);
+        final lineCount = tempTp.computeLineMetrics().length;
+        final lineHeight =
+            lineCount == 3 ? 1.15 : (lineCount == 2 ? 1.20 : 1.28);
 
-        final lineHeight = widget.textHeight ?? lineHeightDefault;
-        final boxHeight =
-            chosenSize * lineHeight * lineCount + padding.vertical + 4;
+        // Re-measure dengan lineHeight final
+        final tpFinal = TextPainter(
+          text: TextSpan(
+            text: widget.text,
+            style: TextStyle(fontSize: chosenSize, height: lineHeight),
+          ),
+          maxLines: _kMaxLines,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth - padding.horizontal);
 
+        final boxHeight = tpFinal.height + padding.vertical;
+
+        //------------------------------------------------------------
+        // 3) Build UI — tidak akan ter-crop
+        //------------------------------------------------------------
         return Container(
           width: double.infinity,
           height: boxHeight,
@@ -138,7 +139,7 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
             child: Text(
               widget.text,
               maxLines: _kMaxLines,
-              overflow: TextOverflow.clip,
+              overflow: TextOverflow.clip, // tanpa ellipsis
               softWrap: true,
               textAlign: widget.textAlign ?? alignDefault,
               style: TextStyle(
