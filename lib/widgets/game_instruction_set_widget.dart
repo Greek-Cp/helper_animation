@@ -1,12 +1,11 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:helper_animation/constants/measurement_size.dart';
 
 class GameInstructionSet extends StatefulWidget {
   final String text;
   final EdgeInsets? padding, margin;
   final Color? backgroundColor, textColor;
   final BorderRadius? borderRadius;
-  final double? fontSize;
   final FontWeight? fontWeight;
   final TextAlign? textAlign;
 
@@ -17,7 +16,6 @@ class GameInstructionSet extends StatefulWidget {
     this.margin,
     this.backgroundColor,
     this.borderRadius,
-    this.fontSize,
     this.fontWeight,
     this.textColor,
     this.textAlign,
@@ -28,23 +26,9 @@ class GameInstructionSet extends StatefulWidget {
 }
 
 class _GameInstructionSetState extends State<GameInstructionSet> {
-  static const _kMaxFont = 22.0;
-  static const _kMinFont = 18.0;
-  static const _kMaxLines = 3;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => MeasurementsSizeApp.initialize(context),
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    MeasurementsSizeApp.initialize(context);
-  }
+  static const double _kMaxFont = 22.0;
+  static const double _kMinFont = 4.0;
+  static const int _kMaxLines = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -55,99 +39,77 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
     final borderDefault = BorderRadius.circular(20);
 
     final padding = widget.padding ??
-        const EdgeInsets.symmetric(vertical: 12, horizontal: 16);
+        const EdgeInsets.symmetric(vertical: 10, horizontal: 16);
     final margin = widget.margin ??
         const EdgeInsets.symmetric(vertical: 12, horizontal: 16);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        //------------------------------------------------------------
-        // 1) Cari font terbesar (22→18) yg tidak melebihi 3 baris
-        //------------------------------------------------------------
-        double low = _kMinFont, high = _kMaxFont, best = low;
+        double low = _kMinFont;
+        double high = _kMaxFont;
+        double bestFont = _kMinFont;
+        double lineHeight = 1.2;
 
-        bool fits(double size) {
+        final maxWidth = constraints.maxWidth - padding.horizontal;
+
+        while ((high - low) > 0.2) {
+          final mid = (low + high) / 2;
+
           final tp = TextPainter(
             text: TextSpan(
               text: widget.text,
               style: TextStyle(
-                fontSize: size,
-                fontWeight: widget.fontWeight ?? weightDefault,
-                height: 1.2,
-              ),
+                  fontSize: mid,
+                  height: lineHeight,
+                  fontWeight: widget.fontWeight ?? weightDefault),
             ),
             maxLines: _kMaxLines,
             textDirection: TextDirection.ltr,
-          )..layout(maxWidth: constraints.maxWidth - padding.horizontal);
-          return !tp.didExceedMaxLines;
-        }
+          )..layout(maxWidth: maxWidth);
 
-        // binary-search
-        while (high - low > .5) {
-          final mid = (high + low) / 2;
-          if (fits(mid)) {
-            best = mid;
+          if (!tp.didExceedMaxLines) {
+            bestFont = mid;
             low = mid;
           } else {
             high = mid;
           }
         }
-        final chosenSize = best;
 
-        //------------------------------------------------------------
-        // 2) Hitung baris aktual & pilih lineHeight adaptif
-        //------------------------------------------------------------
-        final tempTp = TextPainter(
+        // Confirm line height
+        final finalPainter = TextPainter(
           text: TextSpan(
             text: widget.text,
-            style: TextStyle(fontSize: chosenSize, height: 1.2),
+            style: TextStyle(fontSize: bestFont, height: lineHeight),
           ),
           maxLines: _kMaxLines,
           textDirection: TextDirection.ltr,
-        )..layout(maxWidth: constraints.maxWidth - padding.horizontal);
+        )..layout(maxWidth: maxWidth);
 
-        final lineCount = tempTp.computeLineMetrics().length;
-        final lineHeight =
-            lineCount == 3 ? 1.15 : (lineCount == 2 ? 1.20 : 1.28);
-
-        // Re-measure dengan lineHeight final
-        final tpFinal = TextPainter(
-          text: TextSpan(
-            text: widget.text,
-            style: TextStyle(fontSize: chosenSize, height: lineHeight),
-          ),
-          maxLines: _kMaxLines,
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: constraints.maxWidth - padding.horizontal);
-
-        final boxHeight = tpFinal.height + padding.vertical;
-
-        //------------------------------------------------------------
-        // 3) Build UI — tidak akan ter-crop
-        //------------------------------------------------------------
+        final actualLines = finalPainter.computeLineMetrics().length;
+        lineHeight = actualLines == 3 ? 1.15 : (actualLines == 2 ? 1.2 : 1.28);
         return Container(
           width: double.infinity,
-          height: boxHeight,
           margin: margin,
           padding: padding,
           decoration: BoxDecoration(
             color: widget.backgroundColor ?? bgDefault,
             borderRadius: widget.borderRadius ?? borderDefault,
           ),
-          clipBehavior: Clip.hardEdge,
-          child: Center(
-            child: Text(
-              widget.text,
-              maxLines: _kMaxLines,
-              overflow: TextOverflow.clip, // tanpa ellipsis
-              softWrap: true,
-              textAlign: widget.textAlign ?? alignDefault,
-              style: TextStyle(
-                fontSize: chosenSize,
-                fontWeight: widget.fontWeight ?? weightDefault,
-                color: widget.textColor ?? textDefault,
-                height: lineHeight,
-              ),
+          child: AutoSizeText(
+            widget.text,
+            maxLines: 3,
+            minFontSize: 4,
+            stepGranularity: 0.5,
+            overflowReplacement: const Text(
+              'Text too long',
+              style: TextStyle(color: Colors.red),
+            ),
+            textAlign: widget.textAlign ?? alignDefault,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: widget.fontWeight ?? weightDefault,
+              color: widget.textColor ?? textDefault,
+              height: 1.2,
             ),
           ),
         );
