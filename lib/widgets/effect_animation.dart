@@ -5,13 +5,15 @@ import '../painters/effect_painter.dart';
 import '../utils/position_calculator.dart';
 import 'package:flutter/material.dart';
 
-// Controller class untuk mentrigger animasi dari luar
+// Controller class untuk mentrigger animasi dari luar dengan listener
 class EffectAnimationController {
   VoidCallback? _startAnimationCallback;
+  List<Function(AnimationStatus)> _statusListeners = [];
+  bool _isDisposed = false;
 
   // Method untuk mentrigger animasi
   void triggerAnimation() {
-    if (_startAnimationCallback != null) {
+    if (_startAnimationCallback != null && !_isDisposed) {
       _startAnimationCallback!();
     }
   }
@@ -19,6 +21,36 @@ class EffectAnimationController {
   // Method internal untuk mengeset callback
   void _setCallback(VoidCallback callback) {
     _startAnimationCallback = callback;
+  }
+
+  // Method untuk menambahkan listener status animasi
+  void addStatusListener(Function(AnimationStatus) listener) {
+    if (!_isDisposed) {
+      _statusListeners.add(listener);
+    }
+  }
+
+  // Method untuk menghapus listener status animasi
+  void removeStatusListener(Function(AnimationStatus) listener) {
+    if (!_isDisposed) {
+      _statusListeners.remove(listener);
+    }
+  }
+
+  // Method internal untuk mentrigger listener
+  void _notifyStatusListeners(AnimationStatus status) {
+    if (!_isDisposed) {
+      for (var listener in _statusListeners) {
+        listener(status);
+      }
+    }
+  }
+
+  // Method untuk membersihkan resources
+  void dispose() {
+    _isDisposed = true;
+    _statusListeners.clear();
+    _startAnimationCallback = null;
   }
 }
 
@@ -36,7 +68,8 @@ class EffectAnimation extends StatefulWidget {
   final EffectAnimationController? controller; // Controller baru
   final bool touchEnabled; // Flag untuk mengaktifkan/menonaktifkan respons tap
   final bool mixedColor;
-  EffectAnimation({
+
+  const EffectAnimation({
     Key? key,
     required this.child,
     this.effectColor = const Color(0xFF8BB3C5),
@@ -65,6 +98,12 @@ class _EffectAnimationState extends State<EffectAnimation>
   bool _isDragging = false;
   late EffectAnimator _animator;
 
+  // Untuk tracking pointer yang aktif
+  int? _activePointerId;
+
+  // Untuk memeriksa apakah event handler sudah di-setup
+  bool _dragDetectionSetup = false;
+
   @override
   void initState() {
     super.initState();
@@ -78,18 +117,7 @@ class _EffectAnimationState extends State<EffectAnimation>
       duration: widget.duration,
     );
 
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        if (_isDragging && widget.repeatWhenDrag) {
-          _controller.forward(from: 0.0);
-        } else {
-          setState(() {
-            _isAnimating = false;
-          });
-          _controller.reset();
-        }
-      }
-    });
+    _controller.addStatusListener(_handleAnimationStatus);
 
     // Setup controller jika ada
     if (widget.controller != null) {
@@ -97,17 +125,41 @@ class _EffectAnimationState extends State<EffectAnimation>
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateChildSize();
+      if (mounted) {
+        _updateChildSize();
 
-      // Hanya setup drag detection jika touchEnabled
-      if (widget.touchEnabled) {
-        _setupDragDetection();
-      }
+        // Hanya setup drag detection jika touchEnabled
+        if (widget.touchEnabled && !_dragDetectionSetup) {
+          _setupDragDetection();
+          _dragDetectionSetup = true;
+        }
 
-      if (widget.autoAnimate) {
-        _startAnimation();
+        if (widget.autoAnimate) {
+          _startAnimation();
+        }
       }
     });
+  }
+
+  void _handleAnimationStatus(AnimationStatus status) {
+    // Notifikasi listener pada controller
+    if (widget.controller != null) {
+      widget.controller!._notifyStatusListeners(status);
+    }
+
+    // Logika untuk menangani completion
+    if (status == AnimationStatus.completed) {
+      if (_isDragging && widget.repeatWhenDrag) {
+        _controller.forward(from: 0.0);
+      } else {
+        if (mounted) {
+          setState(() {
+            _isAnimating = false;
+          });
+          _controller.reset();
+        }
+      }
+    }
   }
 
   @override
@@ -115,9 +167,15 @@ class _EffectAnimationState extends State<EffectAnimation>
     super.didUpdateWidget(oldWidget);
 
     // Update animator jika jenisnya berubah
-    if (oldWidget.animationType != widget.animationType) {
+    if (oldWidget.animationType != widget.animationType ||
+        oldWidget.mixedColor != widget.mixedColor) {
       _animator = AnimatorFactory.createAnimator(widget.animationType,
           enableMixedColor: widget.mixedColor);
+    }
+
+    // Update duration jika berubah
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
     }
 
     // Update controller callback jika controller berubah
@@ -128,22 +186,29 @@ class _EffectAnimationState extends State<EffectAnimation>
 
     // Handle perubahan touchEnabled
     if (widget.touchEnabled != oldWidget.touchEnabled) {
-      if (widget.touchEnabled) {
+      if (widget.touchEnabled && !_dragDetectionSetup) {
         _setupDragDetection();
+        _dragDetectionSetup = true;
       }
-      // Sayangnya tidak ada cara langsung untuk "unregister" global route
-      // Tapi kita akan mengecek flag touchEnabled di dalam handler
+      // Jika dinonaktifkan, pointer event akan diperiksa di handler
     }
   }
 
   @override
   void dispose() {
+    // Membersihkan listener dan controller
+    _controller.removeStatusListener(_handleAnimationStatus);
     _controller.dispose();
+
+    // Reset variabel pointer tracking
+    _activePointerId = null;
+    _dragDetectionSetup = false;
+
     super.dispose();
   }
 
   void _updateChildSize() {
-    if (_widgetKey.currentContext != null) {
+    if (_widgetKey.currentContext != null && mounted) {
       final RenderBox renderBox =
           _widgetKey.currentContext!.findRenderObject() as RenderBox;
       setState(() {
@@ -153,6 +218,8 @@ class _EffectAnimationState extends State<EffectAnimation>
   }
 
   void _startAnimation() {
+    if (!mounted) return;
+
     _updateChildSize();
     setState(() {
       _isAnimating = true;
@@ -162,8 +229,8 @@ class _EffectAnimationState extends State<EffectAnimation>
 
   void _setupDragDetection() {
     WidgetsBinding.instance.pointerRouter.addGlobalRoute((event) {
-      // Skip jika touchEnabled = false
-      if (!widget.touchEnabled) return;
+      // Skip jika widget tidak aktif, tidak mounted, atau touchEnabled = false
+      if (!widget.touchEnabled || !mounted) return;
 
       if (event is PointerDownEvent) {
         if (_widgetKey.currentContext != null) {
@@ -171,17 +238,29 @@ class _EffectAnimationState extends State<EffectAnimation>
               _widgetKey.currentContext!.findRenderObject() as RenderBox;
           final Offset localPosition = box.globalToLocal(event.position);
           if (box.size.contains(localPosition)) {
-            setState(() {
-              _isDragging = true;
-              _isAnimating = true;
-            });
-            _controller.forward(from: 0.0);
+            // Simpan pointer aktif
+            _activePointerId = event.pointer;
+
+            if (mounted) {
+              setState(() {
+                _isDragging = true;
+                _isAnimating = true;
+              });
+              _controller.forward(from: 0.0);
+            }
           }
         }
       } else if (event is PointerUpEvent || event is PointerCancelEvent) {
-        setState(() {
-          _isDragging = false;
-        });
+        // Hanya tangani pointer yang kita track
+        if (_activePointerId == event.pointer) {
+          _activePointerId = null;
+
+          if (mounted) {
+            setState(() {
+              _isDragging = false;
+            });
+          }
+        }
       }
     });
   }
@@ -255,7 +334,7 @@ extension EffectAnimationExtension on Widget {
     AnimationPosition position = AnimationPosition.outside,
     Offset? customOffset,
     EffectAnimationController? controller,
-    bool touchEnabled = true, // Parameter baru dengan default true
+    bool touchEnabled = true,
     bool enableMixedColor = false,
   }) {
     return EffectAnimation(
@@ -268,7 +347,7 @@ extension EffectAnimationExtension on Widget {
       position: position,
       customOffset: customOffset,
       controller: controller,
-      touchEnabled: touchEnabled, // Tambahkan ke constructor
+      touchEnabled: touchEnabled,
       child: this,
       mixedColor: enableMixedColor,
     );

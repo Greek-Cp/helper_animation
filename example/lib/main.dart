@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:helper_animation/helper_animation.dart';
+import 'package:helper_animation_example/animation_demo.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [SoundRouteObserver()],
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomePage(),
+        '/': (context) => const AnimationDemo(),
         '/detail': (context) => const DetailPage(),
         '/settings': (context) => const SettingsPage(),
       },

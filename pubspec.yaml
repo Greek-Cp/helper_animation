@@ -1,6 +1,6 @@
 name: helper_animation
 description: A simple animation helper library for Flutter widgets.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/Greek-Cp/helper_animation
 repository: https://github.com/Greek-Cp/helper_animation
 environment:
