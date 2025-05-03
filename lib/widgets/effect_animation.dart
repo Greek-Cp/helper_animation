@@ -20,14 +20,23 @@ class EffectAnimationController {
       return Future.value(); // Return completed future if disposed
     }
 
-    // Reset completer jika ada animasi yang masih berjalan
-    _animationCompleter?.complete();
+    // Buat completer baru setiap kali animasi ditrigger
+    if (_animationCompleter != null && !_animationCompleter!.isCompleted) {
+      _animationCompleter!.complete();
+    }
+
+    // Selalu buat Completer baru
     _animationCompleter = Completer<void>();
 
     if (_startAnimationCallback != null) {
       _startAnimationCallback!();
+    } else {
+      // Jika callback belum diset, langsung complete future
+      // untuk menghindari future yang tidak pernah selesai
+      _animationCompleter!.complete();
     }
 
+    // Aman dari null check karena kita baru saja membuatnya
     return _animationCompleter!.future;
   }
 
@@ -52,17 +61,24 @@ class EffectAnimationController {
 
   // Method internal untuk mentrigger listener
   void _notifyStatusListeners(AnimationStatus status) {
-    if (!_isDisposed) {
-      for (var listener in _statusListeners) {
+    if (_isDisposed) return;
+
+    // Buat copy dari list untuk menghindari concurrent modification
+    final listeners = List<Function(AnimationStatus)>.from(_statusListeners);
+
+    // Notifikasi semua listener menggunakan copy list
+    for (var listener in listeners) {
+      if (!_isDisposed) {
         listener(status);
       }
+    }
 
-      // Complete future when animation is completed
-      if (status == AnimationStatus.completed ||
-          status == AnimationStatus.dismissed) {
-        _animationCompleter?.complete();
-        _animationCompleter = null;
-      }
+    // Complete future when animation is completed
+    if ((status == AnimationStatus.completed ||
+            status == AnimationStatus.dismissed) &&
+        _animationCompleter != null &&
+        !_animationCompleter!.isCompleted) {
+      _animationCompleter!.complete();
     }
   }
 
@@ -71,7 +87,10 @@ class EffectAnimationController {
     _isDisposed = true;
     _statusListeners.clear();
     _startAnimationCallback = null;
-    _animationCompleter?.complete();
+
+    if (_animationCompleter != null && !_animationCompleter!.isCompleted) {
+      _animationCompleter!.complete();
+    }
     _animationCompleter = null;
   }
 }
