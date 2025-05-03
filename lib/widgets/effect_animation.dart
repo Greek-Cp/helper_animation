@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../factory/animator_factory.dart';
 import '../animators/effect_animator.dart';
 import '../constants/enums.dart';
@@ -10,12 +12,23 @@ class EffectAnimationController {
   VoidCallback? _startAnimationCallback;
   List<Function(AnimationStatus)> _statusListeners = [];
   bool _isDisposed = false;
+  Completer<void>? _animationCompleter;
 
-  // Method untuk mentrigger animasi
-  void triggerAnimation() {
-    if (_startAnimationCallback != null && !_isDisposed) {
+  // Method untuk mentrigger animasi dan menunggu sampai selesai
+  Future<void> triggerAnimation() {
+    if (_isDisposed) {
+      return Future.value(); // Return completed future if disposed
+    }
+
+    // Reset completer jika ada animasi yang masih berjalan
+    _animationCompleter?.complete();
+    _animationCompleter = Completer<void>();
+
+    if (_startAnimationCallback != null) {
       _startAnimationCallback!();
     }
+
+    return _animationCompleter!.future;
   }
 
   // Method internal untuk mengeset callback
@@ -43,6 +56,13 @@ class EffectAnimationController {
       for (var listener in _statusListeners) {
         listener(status);
       }
+
+      // Complete future when animation is completed
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
+        _animationCompleter?.complete();
+        _animationCompleter = null;
+      }
     }
   }
 
@@ -51,6 +71,8 @@ class EffectAnimationController {
     _isDisposed = true;
     _statusListeners.clear();
     _startAnimationCallback = null;
+    _animationCompleter?.complete();
+    _animationCompleter = null;
   }
 }
 
