@@ -4489,6 +4489,25 @@ class AnimatorFactory {
   static EffectAnimator createAnimator(AnimationUndergroundType type,
       {bool enableMixedColor = false}) {
     switch (type) {
+      // 2 Case baru untuk DotRay
+      case AnimationUndergroundType.perimeterCircleBurstDotRayOut:
+        return PerimeterCircleBurstDotRayOutAnimator(
+          enableHueTilt: enableMixedColor,
+          dotParticleCount: 16,
+          rayParticleCount: 8,
+          rayLength: 30.0,
+          rayWidth: 3.0,
+          saturationBoost: enableMixedColor ? 1.1 : 1.0,
+        );
+      case AnimationUndergroundType.perimeterCircleBurstDotRayIn:
+        return PerimeterCircleBurstDotRayInAnimator(
+          enableHueTilt: enableMixedColor,
+          dotParticleCount: 16,
+          rayParticleCount: 8,
+          rayLength: 30.0,
+          rayWidth: 3.0,
+          saturationBoost: enableMixedColor ? 1.1 : 1.0,
+        );
       case AnimationUndergroundType.perimeterPulseCascadeAnimator:
         return PerimeterPulseCascadeAnimator(
           enableHueTilt: enableMixedColor,
@@ -4615,6 +4634,47 @@ class AnimatorFactory {
         return FlowerCircleAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.magicalOrbitDots:
         return MagicalOrbitDotsAnimator(enableHueTilt: enableMixedColor);
+      case AnimationUndergroundType.perimeterCircleBurstDirectOut:
+        return PerimeterCircleDirectOutAnimator(
+            enableHueTilt: enableMixedColor);
+      case AnimationUndergroundType.perimeterCircleBurstDirectIn:
+        return PerimeterCircleOutsideInAnimator(
+            enableHueTilt: enableMixedColor);
+      case AnimationUndergroundType.perimeterCirclePulsar:
+        return PerimeterCirclePulsarAnimator(
+          enableHueTilt: enableMixedColor,
+          saturationBoost: enableMixedColor ? 1.2 : 1.0,
+          hueTiltRange: enableMixedColor ? 0.45 : 0.0,
+        );
+
+      case AnimationUndergroundType.perimeterCircleOrbit:
+        return PerimeterCircleOrbitAnimator(
+          enableHueTilt: enableMixedColor,
+          saturationBoost: enableMixedColor ? 1.15 : 1.0,
+          hueTiltRange: enableMixedColor ? 0.3 : 0.0,
+          enableTrails: true,
+        );
+
+      case AnimationUndergroundType.perimeterCircleWave:
+        return PerimeterCircleWaveAnimator(
+          enableHueTilt: enableMixedColor,
+          saturationBoost: enableMixedColor ? 1.2 : 1.0,
+          hueTiltRange: enableMixedColor ? 0.5 : 0.0,
+        );
+
+      case AnimationUndergroundType.perimeterCircleTeleport:
+        return PerimeterCircleTeleportAnimator(
+          enableHueTilt: enableMixedColor,
+          saturationBoost: enableMixedColor ? 1.1 : 1.0,
+          hueTiltRange: enableMixedColor ? 0.4 : 0.0,
+        );
+
+      case AnimationUndergroundType.perimeterCircleRipple:
+        return PerimeterCircleRippleAnimator(
+          enableHueTilt: enableMixedColor,
+          saturationBoost: enableMixedColor ? 1.1 : 1.0,
+          hueTiltRange: enableMixedColor ? 0.3 : 0.0,
+        );
     }
   }
 }
