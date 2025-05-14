@@ -141,7 +141,7 @@ class _AnimationDemoState extends State<AnimationDemo>
         title: const Text(
           'Animation Gallery',
           style: TextStyle(color: Colors.white),
-        ),
+        )..animationDraggableFeedback(type: _currentTypeDraggable),
         backgroundColor: Colors.deepPurple.shade800,
         elevation: 0,
         actions: [
@@ -354,7 +354,8 @@ class _AnimationDemoState extends State<AnimationDemo>
                           ),
                         ),
                       ),
-                    ).animationDraggableFeedback(type: _currentTypeDraggable),
+                    ).animationDraggableFeedback(
+                        type: DragFeedbackAnim.jellyfishBreathing),
                     child: Container(
                       width: 100,
                       height: 100,
@@ -1489,6 +1490,7 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
                                   customOffset: Offset.zero,
                                   radiusMultiplier: _radiusMultiplier,
                                   controller: _controllers[targetId],
+                                  enableMixedColor: true,
                                   duration: const Duration(
                                       milliseconds:
                                           1200), // Durasi lebih pendek
@@ -1751,8 +1753,7 @@ class _FloatingAnimationPanelState extends State<FloatingAnimationPanel> {
     switch (type) {
       case AnimationUndergroundType.firework:
         return 'Firework';
-      case AnimationUndergroundType.ripple:
-        return 'Ripple';
+
       default:
         return type.toString().split('.').last;
     }

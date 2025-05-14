@@ -148,7 +148,10 @@ class _EffectAnimationState extends State<EffectAnimation>
   @override
   void initState() {
     super.initState();
+    _initializeAnimation();
+  }
 
+  void _initializeAnimation() {
     // Inisialisasi animator berdasarkan type
     _animator = AnimatorFactory.createAnimator(widget.animationType,
         enableMixedColor: widget.mixedColor);
@@ -260,6 +263,19 @@ class _EffectAnimationState extends State<EffectAnimation>
 
   void _startAnimation() {
     if (!mounted) return;
+
+    // Dispose old controller and animator
+    _controller.dispose();
+
+    // Create new animation controller and animator
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    );
+
+    _controller.addStatusListener(_handleAnimationStatus);
+    _animator = AnimatorFactory.createAnimator(widget.animationType,
+        enableMixedColor: widget.mixedColor);
 
     _updateChildSize();
     setState(() {
