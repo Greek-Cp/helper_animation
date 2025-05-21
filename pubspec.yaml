@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  just_audio: ^0.9.46
   auto_size_text: ^3.0.0  
+  flame_audio: ^2.10.7
 
 dev_dependencies:
   flutter_test:
@@ -24,3 +24,4 @@ flutter:
     - assets/sounds/click/
     - assets/sounds/notification/
     - assets/sounds/sfx/
+
