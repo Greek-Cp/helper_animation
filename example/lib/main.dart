@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flame_audio/flame_audio.dart';
-import 'package:helper_animation/sound_manager/sound_manager.dart';
+import 'package:helper_animation/sound_manager/sound_controller.dart';
+import 'package:helper_animation/sound_manager/sound_manager.dart'
+    as sound_manager;
+import 'package:helper_animation/sound_manager/sound_enums.dart';
+import 'package:helper_animation/sound_manager/sound_paths.dart';
 import 'dart:async';
 /* ──────────────────────────────────────────────────────────────
  *  >>> paste di sini kode SoundController, SoundManager,
  *  >>> SoundExtension, SoundRouteObserver, enum-enum, dll.
- *  (yang sudah Anda punya persis seperti sebelumnya)
+ *  (yang sudah Anda punya persis se=erti sebelumnya)
  * ────────────────────────────────────────────────────────────── */
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlameAudio.audioCache.prefix = '';
   // Optional: preload all assets to avoid first click delay
-  await FlameAudio.audioCache.loadAll([
-    ...SoundManager.instance.clickSoundPaths.values,
-    ...SoundManager.instance.sfxSoundPaths.values,
-    ...SoundManager.instance.notificationSoundPaths.values,
-    ...SoundManager.instance.bgmSoundPaths.values,
-  ]);
+  await FlameAudio.audioCache.loadAll(
+    SoundPaths.instance.getAllSoundPaths(),
+  );
 
   runApp(const MyApp());
 }
@@ -77,7 +78,7 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
             onPressed: () async {
               setState(() => _muted = !_muted);
-              await SoundManager.instance.setMuted(_muted);
+              await sound_manager.SoundManager.instance.setMuted(_muted);
             },
           ),
         ],
@@ -119,7 +120,7 @@ class _HomePageState extends State<HomePage> {
                 value: _masterVol,
                 onChanged: (v) async {
                   setState(() => _masterVol = v);
-                  await SoundManager.instance.setMasterVolume(v);
+                  await sound_manager.SoundManager.instance.setMasterVolume(v);
                 },
               ),
             ),
@@ -240,23 +241,30 @@ class _HomePageState extends State<HomePage> {
           children: [
             ElevatedButton(
               onPressed: () => FlameAudio.play(
-                SoundManager.instance.sfxSoundPaths[SFXSound.airWoosh]!,
+                SoundPaths.instance.getSoundPath(
+                  SoundCategory.sfx,
+                  SFXSound.airWoosh,
+                )!,
                 volume: _sfxVol,
               ),
               child: const Text('Air Woosh'),
             ).addSound(sound: ClickSound.selectClick),
             ElevatedButton(
               onPressed: () => FlameAudio.play(
-                SoundManager.instance
-                    .notificationSoundPaths[NotificationSound.retroArcade]!,
+                SoundPaths.instance.getSoundPath(
+                  SoundCategory.notification,
+                  NotificationSound.retroArcade,
+                )!,
                 volume: _sfxVol,
               ),
               child: const Text('Retro Arcade'),
             ).addSound(sound: ClickSound.selectClick),
             ElevatedButton(
               onPressed: () => FlameAudio.play(
-                SoundManager.instance
-                    .notificationSoundPaths[NotificationSound.mysteryAlert]!,
+                SoundPaths.instance.getSoundPath(
+                  SoundCategory.notification,
+                  NotificationSound.mysteryAlert,
+                )!,
                 volume: _sfxVol,
               ),
               child: const Text('Mystery Alert'),
@@ -323,8 +331,10 @@ class _SecondPageState extends State<SecondPage> {
 
       // Just play a single type of sound for the rapid test
       FlameAudio.play(
-        SoundManager
-            .instance.notificationSoundPaths[NotificationSound.retroArcade]!,
+        SoundPaths.instance.getSoundPath(
+          SoundCategory.notification,
+          NotificationSound.retroArcade,
+        )!,
         volume: _sfxVol,
       );
     });
@@ -704,5 +714,47 @@ class _DuckingTestPageState extends State<DuckingTestPage> {
       category: category,
       sound: sound,
     );
+  }
+}
+
+class _WidgetSoundData {
+  final SoundController controller;
+  final bool isExternalController;
+  final SoundCategory? category;
+  final dynamic sound;
+
+  _WidgetSoundData({
+    required this.controller,
+    this.isExternalController = false,
+    this.category,
+    this.sound,
+  });
+}
+
+class SoundRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (route.settings.name != null) {
+      sound_manager.SoundManager.instance.setCurrentRoute(route.settings.name!);
+    }
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (previousRoute?.settings.name != null) {
+      sound_manager.SoundManager.instance
+          .setCurrentRoute(previousRoute!.settings.name!);
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute?.settings.name != null) {
+      sound_manager.SoundManager.instance
+          .setCurrentRoute(newRoute!.settings.name!);
+    }
   }
 }

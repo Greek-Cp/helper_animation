@@ -2,244 +2,24 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+import 'sound_controller.dart';
+import 'sound_enums.dart';
+import 'sound_paths.dart';
 
-/// Enum for click event sounds
-enum ClickSound {
-  gameClick,
-  selectClick,
+/// Internal class to store widget sound data
+class _WidgetSoundData {
+  final SoundController controller;
+  final bool isExternalController;
+  final SoundCategory? category;
+  final dynamic sound;
+
+  _WidgetSoundData({
+    required this.controller,
+    this.isExternalController = false,
+    this.category,
+    this.sound,
+  });
 }
-
-/// Enum for background music
-enum BGMSound {
-  birdsSinging,
-  fluteMusic,
-}
-
-/// Enum for sound effects
-enum SFXSound {
-  airWoosh,
-}
-
-/// Enum for notification sounds
-enum NotificationSound {
-  retroArcade,
-  mysteryAlert,
-}
-
-/// Main sound category enum
-enum SoundCategory {
-  clickEvent,
-  bgm,
-  sfx,
-  notification,
-}
-
-/// Class to control sound playback
-class SoundController {
-  dynamic _player;
-  bool _autoPlay;
-  double _volume;
-  bool _loop;
-
-  String? _currentPath;
-  dynamic _currentSound;
-  SoundCategory? _currentCategory;
-  bool _isPlaying = false;
-
-  final _state = StreamController<String>.broadcast();
-  Stream<String> get soundState => _state.stream;
-
-  SoundController({
-    bool autoPlay = false,
-    double volume = 1.0,
-    bool loop = false,
-  })  : _autoPlay = autoPlay,
-        _volume = volume,
-        _loop = loop;
-
-  /* ─────────────────────── PLAY SOUND ─────────────────────── */
-
-  Future<void> playSound({
-    required SoundCategory category,
-    required dynamic sound,
-    bool? autoPlay,
-    double? volume,
-    bool? loop,
-  }) async {
-    try {
-      final path = _getSoundPath(category, sound);
-      if (path == null) return;
-
-      if (volume != null) _volume = volume;
-      if (loop != null) _loop = loop;
-
-      _currentPath = path;
-      _currentSound = sound;
-      _currentCategory = category;
-
-      /* ---------- BGM memakai FlameAudio.bgm ---------- */
-      if (category == SoundCategory.bgm) {
-        await FlameAudio.bgm.stop();
-        final shouldPlay = autoPlay ?? _autoPlay;
-        await FlameAudio.bgm.play(path, volume: _volume);
-        _isPlaying = true;
-        if (!shouldPlay) {
-          await FlameAudio.bgm.pause();
-          _isPlaying = false;
-        }
-        _state.add('playing');
-        return;
-      }
-
-      /* ---------- SFX / Click / Notification ---------- */
-      _isPlaying = true;
-      _state.add('playing');
-
-      if (_loop) {
-        _player = await FlameAudio.loop(path, volume: _volume);
-      } else {
-        _player = await FlameAudio.play(path, volume: _volume);
-        // Add completion listener
-        _player?.onPlayerComplete.listen((_) {
-          _isPlaying = false;
-          _state.add('completed');
-        });
-      }
-    } catch (e) {
-      debugPrint('Sound error (playSound): $e');
-      _state.add('error:$e');
-    }
-  }
-
-  /* ───────────── GENERIC CONTROLS (play/pause/…) ──────────── */
-
-  Future<void> play() async {
-    if (_currentCategory == SoundCategory.bgm) {
-      await FlameAudio.bgm.resume();
-    } else {
-      await _player?.resume();
-    }
-    _isPlaying = true;
-    _state.add('playing');
-  }
-
-  Future<void> pause() async {
-    if (_currentCategory == SoundCategory.bgm) {
-      await FlameAudio.bgm.pause();
-    } else {
-      await _player?.pause();
-    }
-    _isPlaying = false;
-    _state.add('paused');
-  }
-
-  Future<void> stop() async {
-    if (_currentCategory == SoundCategory.bgm) {
-      await FlameAudio.bgm.stop();
-    } else {
-      await _player?.stop();
-    }
-    _isPlaying = false;
-    _state.add('stopped');
-  }
-
-  /* ──────────────────── setVolume / setLoop ───────────────── */
-
-  Future<void> setVolume(double v) async {
-    _volume = v.clamp(0.0, 1.0);
-    debugPrint('🔊 Setting volume to: $_volume');
-    if (_currentCategory == SoundCategory.bgm) {
-      if (_isPlaying) {
-        await FlameAudio.bgm.play(_currentPath!, volume: _volume);
-        debugPrint('🔊 BGM volume set to: $_volume');
-      }
-    } else {
-      await _player?.setVolume(_volume);
-      debugPrint('🔊 SFX volume set to: $_volume');
-    }
-    _state.add('volume_changed');
-  }
-
-  /// Mengganti looping: stop player lama, putar ulang dengan/ tanpa loop.
-  Future<void> setLoop(bool loop) async {
-    if (_currentCategory == SoundCategory.bgm) {
-      // BGM diputar terus oleh FlameAudio.bgm; biarkan pengguna kontrol di luar.
-      _loop = loop;
-      _state.add('loop_changed');
-      return;
-    }
-
-    if (_loop == loop) return; // tidak berubah
-    _loop = loop;
-    if (_currentPath == null) return;
-
-    // Re-create player dengan mode baru
-    await _player?.stop();
-    await _player?.dispose();
-    _player = _loop
-        ? await FlameAudio.loop(_currentPath!, volume: _volume)
-        : await FlameAudio.play(_currentPath!, volume: _volume);
-
-    _state.add('loop_changed');
-  }
-
-  void setAutoPlay(bool auto) {
-    _autoPlay = auto;
-    _state.add('autoplay_changed');
-  }
-
-  Future<void> replay() async {
-    if (_currentCategory == SoundCategory.bgm) {
-      await FlameAudio.bgm.stop();
-      await FlameAudio.bgm.play(_currentPath!, volume: _volume);
-    } else {
-      await _player?.seek(Duration.zero);
-      await _player?.play();
-    }
-    _state.add('replaying');
-  }
-
-  Future<void> dispose() async {
-    await _player?.dispose();
-    await _state.close();
-    if (_currentCategory == SoundCategory.bgm) {
-      await FlameAudio.bgm.stop();
-    }
-    _isPlaying = false;
-  }
-
-  /* ───────────────────────── GETTERS ───────────────────────── */
-
-  bool get isPlaying => _isPlaying;
-
-  double get volume => _volume;
-  bool get autoPlay => _autoPlay;
-  bool get loop => _loop;
-  String? get currentPath => _currentPath;
-  dynamic get currentSound => _currentSound;
-  SoundCategory? get currentCategory => _currentCategory;
-
-  /* ──────────────────────── INTERNAL ──────────────────────── */
-
-  String? _getSoundPath(SoundCategory c, dynamic s) {
-    switch (c) {
-      case SoundCategory.clickEvent:
-        return (s is ClickSound)
-            ? SoundManager.instance.clickSoundPaths[s]
-            : null;
-      case SoundCategory.bgm:
-        return (s is BGMSound) ? SoundManager.instance.bgmSoundPaths[s] : null;
-      case SoundCategory.sfx:
-        return (s is SFXSound) ? SoundManager.instance.sfxSoundPaths[s] : null;
-      case SoundCategory.notification:
-        return (s is NotificationSound)
-            ? SoundManager.instance.notificationSoundPaths[s]
-            : null;
-    }
-  }
-}
-
-const _assetPrefix = 'packages/helper_animation/';
 
 class SoundManager {
   // Singleton pattern
@@ -247,40 +27,12 @@ class SoundManager {
   factory SoundManager() => instance;
   SoundManager._internal();
 
-  // Map asset paths for each sound enum
-  final Map<ClickSound, String> clickSoundPaths = {
-    ClickSound.gameClick:
-        '${_assetPrefix}assets/sounds/click/mixkit-game-click-1114.wav',
-    ClickSound.selectClick:
-        '${_assetPrefix}assets/sounds/click/mixkit-select-click-1109.wav',
-  };
-
-  final Map<BGMSound, String> bgmSoundPaths = {
-    BGMSound.birdsSinging:
-        '${_assetPrefix}assets/sounds/bgm/mixkit-little-birds-singing-in-the-trees-17.wav',
-    BGMSound.fluteMusic:
-        '${_assetPrefix}assets/sounds/bgm/mixkit-melodical-flute-music-notification-2310.wav',
-  };
-
-  final Map<SFXSound, String> sfxSoundPaths = {
-    SFXSound.airWoosh:
-        '${_assetPrefix}assets/sounds/sfx/mixkit-air-woosh-1489.wav',
-  };
-
-  final Map<NotificationSound, String> notificationSoundPaths = {
-    NotificationSound.retroArcade:
-        '${_assetPrefix}assets/sounds/notification/mixkit-retro-arcade-casino-notification-211.wav',
-    NotificationSound.mysteryAlert:
-        '${_assetPrefix}assets/sounds/notification/mixkit-video-game-mystery-alert-234.wav',
-  };
-
   // Store all active widget sound controllers
   final Map<Key, _WidgetSoundData> _widgetSoundControllers = {};
 
   // Store all active BGM controllers with their original volumes
   final Map<SoundController, double> _bgmOriginalVolumes = {};
-  final Set<SoundController> _uniqueBGMControllers =
-      {}; // Track unique controllers
+  final Set<SoundController> _uniqueBGMControllers = {};
   final Map<String, SoundController> _bgmControllers = {};
 
   // Current active route
@@ -297,10 +49,14 @@ class SoundManager {
   AudioPlayer? _bgmPlayer;
   double _currentBGMVolume = 1.0;
   static const Duration _duckingDelay = Duration(milliseconds: 500);
-  static const Duration _fadeStepDuration =
-      Duration(milliseconds: 16); // ~60fps for smooth transition
+  static const Duration _fadeStepDuration = Duration(milliseconds: 16);
   static const Duration _volumeTransitionDuration = Duration(milliseconds: 300);
-  static const double _duckingVolume = 0.2;
+  static const double _duckingVolume = 0.0;
+
+  /// Get the sound path for a given category and sound
+  String? _getSoundPath(SoundCategory category, dynamic sound) {
+    return SoundPaths.instance.getSoundPath(category, sound);
+  }
 
   /// Smoothly fade BGM volume
   Future<void> _smoothVolumeFade(double targetVolume) async {
@@ -426,7 +182,6 @@ class SoundManager {
 
     // Only store original volume if this is a new controller
     if (_uniqueBGMControllers.add(controller)) {
-      // Returns true if controller was added
       _bgmOriginalVolumes[controller] = controller.volume;
       debugPrint('🔊 Stored original BGM volume: ${controller.volume}');
     }
@@ -548,37 +303,6 @@ class SoundManager {
         volume: _isDucking ? volume * _duckingVolume : volume);
     _currentBGMVolume = volume;
   }
-
-  /// Get the sound path for a given category and sound
-  String? _getSoundPath(SoundCategory category, dynamic sound) {
-    switch (category) {
-      case SoundCategory.clickEvent:
-        return (sound is ClickSound) ? clickSoundPaths[sound] : null;
-      case SoundCategory.bgm:
-        return (sound is BGMSound) ? bgmSoundPaths[sound] : null;
-      case SoundCategory.sfx:
-        return (sound is SFXSound) ? sfxSoundPaths[sound] : null;
-      case SoundCategory.notification:
-        return (sound is NotificationSound)
-            ? notificationSoundPaths[sound]
-            : null;
-    }
-  }
-}
-
-/// Internal class to store widget sound data
-class _WidgetSoundData {
-  final SoundController controller;
-  final bool isExternalController;
-  final SoundCategory? category;
-  final dynamic sound;
-
-  _WidgetSoundData({
-    required this.controller,
-    this.isExternalController = false,
-    this.category,
-    this.sound,
-  });
 }
 
 /// Extension for adding sound to widgets
@@ -729,7 +453,7 @@ class _SoundWidgetState extends State<_SoundWidget> {
 
   void _setupBGM() async {
     final path =
-        SoundManager.instance._getSoundPath(widget.category, widget.sound);
+        SoundPaths.instance.getSoundPath(widget.category, widget.sound);
     if (path == null) return;
 
     // Register in the sound manager
