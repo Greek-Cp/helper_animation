@@ -1,5 +1,8 @@
 library helper_animation;
 
+// Re-export flame_audio so users don't need to import it separately
+export 'package:flame_audio/flame_audio.dart';
+
 export 'constants/enums.dart';
 export 'widgets/effect_animation.dart';
 export 'factory/animator_factory.dart';

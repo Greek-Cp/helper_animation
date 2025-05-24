@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flame_audio/flame_audio.dart';
-import 'package:helper_animation/sound_manager/sound_controller.dart';
-import 'package:helper_animation/sound_manager/sound_manager.dart'
-    as sound_manager;
-import 'package:helper_animation/sound_manager/sound_enums.dart';
-import 'package:helper_animation/sound_manager/sound_paths.dart';
+import 'package:helper_animation/helper_animation.dart';
 import 'dart:async';
 /* ──────────────────────────────────────────────────────────────
  *  >>> paste di sini kode SoundController, SoundManager,
@@ -37,7 +32,7 @@ class MyApp extends StatelessWidget {
       ),
       // Add route observer for BGM transitions
       navigatorObservers: [
-        sound_manager.SoundRouteObserver(),
+        SoundRouteObserver(),
       ],
       // Define named routes
       routes: {

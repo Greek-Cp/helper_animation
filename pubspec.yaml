@@ -25,3 +25,7 @@ flutter:
     - assets/sounds/notification/
     - assets/sounds/sfx/
 
+# This section declares that flame_audio is exported to consumers of your package
+export:
+  flame_audio: ^2.10.7
+
