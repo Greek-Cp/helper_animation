@@ -9,3 +9,7 @@ export 'widgets/game_instruction_set_widget.dart';
 export 'sound_manager/sound_manager.dart';
 export 'constants/app_size.dart';
 export 'constants/measurement_size.dart';
+export 'sound_manager/sound_controller.dart';
+export 'sound_manager/sound_enums.dart';
+export 'sound_manager/sound_paths.dart';
+export 'sound_manager/sound_route_observer.dart';
