@@ -5,634 +5,408 @@ import 'dart:math';
 import 'sound_controller.dart';
 import 'sound_enums.dart';
 import 'sound_paths.dart';
+// sound_manager.dart
+import 'dart:async';
+import 'dart:math';
+import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter/material.dart';
+import 'sound_controller.dart';
+import 'sound_enums.dart';
+import 'sound_paths.dart';
 
-/// Internal class to store widget sound data
+/// --------------------------- internal struct ---------------------------
 class _WidgetSoundData {
   final SoundController controller;
-  final bool isExternalController;
+  final bool external;
   final SoundCategory? category;
   final dynamic sound;
-
   _WidgetSoundData({
     required this.controller,
-    this.isExternalController = false,
+    this.external = false,
     this.category,
     this.sound,
   });
 }
 
+/// ------------------------------ manager -------------------------------
 class SoundManager {
-  // Singleton pattern
-  static final SoundManager instance = SoundManager._internal();
-  factory SoundManager() => instance;
   SoundManager._internal();
+  static final SoundManager instance = SoundManager._internal();
 
-  // Store all active widget sound controllers
-  final Map<Key, _WidgetSoundData> _widgetSoundControllers = {};
+  /* ─────── NEW FIELDS ─────── */
+  String? _currentTrackPath; // path BGM yg sedang diputar
+  String? _bgmRouteBackupPath; // path BGM halaman yg diback-up
+  AudioPlayer? _bgmRouteBackup; // player halaman (opsional, bisa null)
+  double _bgmRouteBackupVol = 1;
 
-  // Store all active BGM controllers with their original volumes
-  final Map<SoundController, double> _bgmOriginalVolumes = {};
-  final Set<SoundController> _uniqueBGMControllers = {};
-  final Map<String, SoundController> _bgmControllers = {};
+  /* ───────── stores ───────── */
+  final _widgets = <Key, _WidgetSoundData>{};
+  final _bgmOriginal = <SoundController, double>{};
+  final _bgmPerRoute = <String, SoundController>{};
+  String _currentRoute = '';
+// 3️⃣  di overlay helper
+  Future<void> pushOverlayBGM(String path, {double volume = .8}) async {
+    if (_bgmRouteBackup == null && _bgm != null) {
+      _bgmRouteBackup = _bgm;
+      _bgmRouteBackupVol = _bgmVol;
+      _bgmRouteBackupPath = _currentTrackPath; // ← simpan path lama
+    }
+    await _playBgm(path, volume: volume);
+  }
 
-  // Current active route
-  String _currentRoute = '/';
+  Future<void> popOverlayBGM() async {
+    if (_bgmRouteBackupPath == null) return; // tak ada overlay
+    await _playBgm(_bgmRouteBackupPath!, // ← gunakan path lama
+        volume: _bgmRouteBackupVol);
+    _bgmRouteBackup = null;
+    _bgmRouteBackupPath = null;
+  }
 
-  // General settings
-  bool _isMuted = false;
-  double _masterVolume = 1.0;
+  /* ───────── global flags ───────── */
+  bool _muted = false;
+  double _masterVol = 1.0;
 
-  // Ducking properties
-  bool _isDucking = false;
-  Timer? _duckingTimer;
+  /* ───────── ducking config ───────── */
+  static const _duckVolFactor = .5;
+  static const _duckDelay = Duration(milliseconds: 500);
+  static const _fadeStep = Duration(milliseconds: 16);
+  static const _fadeDur = Duration(milliseconds: 300);
+  Timer? _duckTimer;
   Timer? _fadeTimer;
-  AudioPlayer? _bgmPlayer;
-  double _currentBGMVolume = 1.0;
-  static const Duration _duckingDelay = Duration(milliseconds: 500);
-  static const Duration _fadeStepDuration = Duration(milliseconds: 16);
-  static const Duration _volumeTransitionDuration = Duration(milliseconds: 300);
-  static const double _duckingVolume = 0.0;
+  bool _isDucking = false;
 
-  // Crossfade properties
-  AudioPlayer? _nextBgmPlayer;
-  static const Duration _crossfadeDuration = Duration(milliseconds: 1000);
-  bool _isCrossfading = false;
+  /* ───────── bgm players ───────── */
+  AudioPlayer? _bgm;
+  AudioPlayer? _bgmNext;
+  double _bgmVol = 1.0;
+  static const _crossDur = Duration(seconds: 1);
+  bool _crossing = false;
 
-  /// Get the sound path for a given category and sound
-  String? _getSoundPath(SoundCategory category, dynamic sound) {
-    return SoundPaths.instance.getSoundPath(category, sound);
+  /* =====================  PUBLIC API  ===================== */
+
+  Future<void> setMuted(bool v) async {
+    _muted = v;
+    _applyMasterVolume();
   }
 
-  /// Smoothly fade BGM volume
-  Future<void> _smoothVolumeFade(double targetVolume) async {
-    if (_bgmPlayer == null) return;
+  Future<void> setMasterVolume(double v) async {
+    _masterVol = v.clamp(0, 1);
+    _applyMasterVolume();
+  }
 
-    // Cancel any ongoing fade
+  /// dipanggil SoundRouteObserver
+  Future<void> setCurrentRoute(String name) async {
+    if (name == _currentRoute) return;
+    _currentRoute = name;
+    final c = _bgmPerRoute[name] ?? _bgmPerRoute['global'];
+    if (c?.currentPath != null) {
+      await _playBgm(c!.currentPath!, volume: c.volume);
+    }
+  }
+
+  /// widget menelepon untuk mendaftarkan BGM-nya
+  void registerBgmForRoute(String routeName, SoundController controller) async {
+    if (!_bgmPerRoute.containsKey(routeName)) {
+      _bgmOriginal[controller] = controller.volume;
+    }
+    _bgmPerRoute[routeName] = controller;
+  }
+
+  void registerWidgetSound(Key key, _WidgetSoundData data) {
+    _widgets[key] = data;
+
+    if (data.category != SoundCategory.bgm) {
+      data.controller.soundState.listen((e) {
+        if (e == 'playing') _startDuck();
+        if (e == 'completed') _tryRestore();
+      });
+    }
+  }
+
+  Future<void> unregisterWidgetSound(Key key) async {
+    final data = _widgets.remove(key);
+    if (data == null) return;
+    if (!data.external) await data.controller.dispose();
+  }
+
+  /* =====================  DUCKING  ===================== */
+
+  void _startDuck() async {
+    _isDucking = true;
+    _duckTimer?.cancel();
+    _duckTimer = Timer(_duckDelay, _tryRestore);
+    await _fadeBgm(_bgmVol * _duckVolFactor);
+  }
+
+  void _tryRestore() async {
+    if (_widgets.values
+        .any((d) => d.category != SoundCategory.bgm && d.controller.isPlaying))
+      return;
+    _isDucking = false;
+    await _fadeBgm(_masterVol);
+  }
+
+  /* =====================  FADE HELPERS  ===================== */
+
+  Future<void> _fadeBgm(double target) async {
+    if (_bgm == null) return;
     _fadeTimer?.cancel();
+    final start = _bgmVol;
+    final steps = (_fadeDur.inMilliseconds / _fadeStep.inMilliseconds).round();
+    var i = 0;
 
-    final startVolume = _currentBGMVolume;
-    final totalSteps = (_volumeTransitionDuration.inMilliseconds /
-            _fadeStepDuration.inMilliseconds)
-        .round();
-    final volumeDiff = targetVolume - startVolume;
-    int currentStep = 0;
-
-    debugPrint(
-        '🔊 Starting fade from ${startVolume.toStringAsFixed(3)} to ${targetVolume.toStringAsFixed(3)}');
-
-    void updateVolume() async {
-      currentStep++;
-      if (currentStep >= totalSteps) {
-        _fadeTimer?.cancel();
-        _fadeTimer = null;
-        _currentBGMVolume = targetVolume;
-        await _bgmPlayer?.setVolume(targetVolume);
-        debugPrint('🔊 Fade completed: ${targetVolume.toStringAsFixed(3)}');
-        return;
-      }
-
-      // Smooth easing function
-      final progress = currentStep / totalSteps;
-      final easedProgress =
-          -0.5 * (cos(pi * progress) - 1); // Smoother sinusoidal easing
-      final newVolume = startVolume + (volumeDiff * easedProgress);
-
-      _currentBGMVolume = newVolume;
-      await _bgmPlayer?.setVolume(newVolume);
-    }
-
-    _fadeTimer = Timer.periodic(_fadeStepDuration, (_) => updateVolume());
-  }
-
-  /// Handle ducking of BGM
-  Future<void> _handleDucking() async {
-    if (!_isDucking) {
-      _isDucking = true;
-      debugPrint('🔊 -------- DUCKING START --------');
-
-      // Store original volume if not already stored
-      for (final controller in _bgmControllers.values) {
-        if (controller.isPlaying) {
-          _bgmOriginalVolumes[controller] = controller.volume;
-        }
-      }
-
-      // Smoothly duck to target volume
-      final targetVolume = _currentBGMVolume * _duckingVolume;
-      await _smoothVolumeFade(targetVolume);
-    }
-
-    // Reset existing timer
-    _duckingTimer?.cancel();
-
-    // Start new timer to restore volume
-    _duckingTimer = Timer(_duckingDelay, () async {
-      await _checkAndRestoreVolume();
+    _fadeTimer = Timer.periodic(_fadeStep, (_) async {
+      i++;
+      final t = -0.5 * (cos(pi * i / steps) - 1);
+      _bgmVol = start + (target - start) * t;
+      await _bgm!.setVolume(_bgmVol * (_muted ? 0 : 1));
+      if (i >= steps) _fadeTimer?.cancel();
     });
   }
 
-  /// Check if we can restore volume and do so if possible
-  Future<void> _checkAndRestoreVolume() async {
-    bool otherSoundsPlaying = false;
-    for (final data in _widgetSoundControllers.values) {
-      if (data.controller.isPlaying && data.category != SoundCategory.bgm) {
-        otherSoundsPlaying = true;
-        break;
-      }
-    }
-
-    if (!otherSoundsPlaying) {
-      debugPrint('🔊 -------- VOLUME RESTORE --------');
-
-      // Find the original volume to restore to
-      double originalVolume = 1.0;
-      for (final entry in _bgmControllers.entries) {
-        if (entry.value.isPlaying) {
-          originalVolume =
-              _bgmOriginalVolumes[entry.value] ?? entry.value.volume;
-          break;
-        }
-      }
-
-      // Smoothly restore volume
-      await _smoothVolumeFade(originalVolume);
-      _isDucking = false;
-    }
-  }
-
-  /// Register a widget sound controller
-  void registerWidgetSound(Key key, _WidgetSoundData data) {
-    _widgetSoundControllers[key] = data;
-
-    // Add listener for sound state to handle ducking
-    if (data.category != SoundCategory.bgm) {
-      data.controller.soundState.listen((state) {
-        if (state == 'playing') {
-          debugPrint('🔊 Sound effect started playing, triggering duck');
-          _handleDucking();
-        } else if (state == 'completed') {
-          debugPrint('🔊 Sound effect completed, checking for volume restore');
-          _checkAndRestoreVolume();
-        }
-      });
-    } else {
-      // If it's a BGM, store it in our BGM controllers
-      _uniqueBGMControllers.add(data.controller);
-    }
-  }
-
-  /// Register a BGM controller
-  void registerBGM(SoundController controller, {String? route}) {
-    final key = route ?? 'global';
-
-    // Only store original volume if this is a new controller
-    if (_uniqueBGMControllers.add(controller)) {
-      _bgmOriginalVolumes[controller] = controller.volume;
-      debugPrint('🔊 Stored original BGM volume: ${controller.volume}');
-    }
-
-    _bgmControllers[key] = controller;
-  }
-
-  /// Unregister a widget sound controller
-  Future<void> unregisterWidgetSound(Key key) async {
-    if (_widgetSoundControllers.containsKey(key)) {
-      final data = _widgetSoundControllers[key]!;
-      if (!data.isExternalController) {
-        await data.controller.dispose();
-      }
-      _widgetSoundControllers.remove(key);
-
-      // Also remove from BGM tracking if it was a BGM
-      if (data.category == SoundCategory.bgm) {
-        _bgmOriginalVolumes.remove(data.controller);
-        _uniqueBGMControllers.remove(data.controller);
-        _bgmControllers
-            .removeWhere((_, controller) => controller == data.controller);
+  void _applyMasterVolume() {
+    final v = _masterVol * (_muted ? 0 : 1);
+    _bgm?.setVolume(v);
+    for (final d in _widgets.values) {
+      if (d.category != SoundCategory.bgm) {
+        d.controller.setVolume(d.controller.volume * v);
       }
     }
   }
 
-  /// Set current route and handle BGM accordingly
-  Future<void> setCurrentRoute(String route) async {
-    _currentRoute = route;
-    _handleRouteChange();
-  }
+  /* =====================  PLAY / CROSSFADE  ===================== */
 
-  Future<void> _handleRouteChange() async {
-    debugPrint('🎵 Route changed to: $_currentRoute');
+  Future<void> _playBgm(String path, {double volume = 1}) async {
+    _currentTrackPath = path; // ← baris tambahan
+    volume *= _isDucking ? _duckVolFactor : 1;
 
-    // Find the BGM controller and path for the current route
-    final routeController = _bgmControllers[_currentRoute];
-
-    if (routeController != null && routeController.currentPath != null) {
-      debugPrint('🎵 Found BGM for route: $_currentRoute');
-
-      // Play the route-specific BGM
-      await playBGM(
-        routeController.currentPath!,
-        volume: routeController.volume,
-      );
-    } else {
-      // If no route-specific BGM, check for global BGM
-      final globalController = _bgmControllers['global'];
-      if (globalController != null && globalController.currentPath != null) {
-        debugPrint('🎵 Using global BGM');
-        await playBGM(
-          globalController.currentPath!,
-          volume: globalController.volume,
-        );
-      }
-    }
-  }
-
-  /// Set master volume
-  Future<void> setMasterVolume(double volume) async {
-    _masterVolume = volume.clamp(0.0, 1.0);
-
-    // If we're currently ducking, adjust the ducked volume
-    if (_isDucking) {
-      final adjustedVolume = _masterVolume * _duckingVolume;
-      await _smoothVolumeFade(adjustedVolume);
-    } else {
-      await _smoothVolumeFade(_masterVolume);
-    }
-
-    // Update non-BGM sounds immediately
-    for (final data in _widgetSoundControllers.values) {
-      if (data.category != SoundCategory.bgm) {
-        await data.controller.setVolume(data.controller.volume * _masterVolume);
-      }
-    }
-  }
-
-  /// Mute/unmute all sounds
-  Future<void> setMuted(bool muted) async {
-    _isMuted = muted;
-    final effectiveVolume = _isMuted ? 0.0 : _masterVolume;
-
-    for (final data in _widgetSoundControllers.values) {
-      await data.controller.setVolume(data.controller.volume * effectiveVolume);
-    }
-  }
-
-  /// Dispose all controllers
-  Future<void> disposeAll() async {
-    _duckingTimer?.cancel();
-    _fadeTimer?.cancel();
-    await _bgmPlayer?.dispose();
-    await _nextBgmPlayer?.dispose();
-    _duckingTimer = null;
-    _fadeTimer = null;
-    _bgmPlayer = null;
-    _nextBgmPlayer = null;
-    _isDucking = false;
-    _isCrossfading = false;
-
-    for (final data in _widgetSoundControllers.values) {
-      if (!data.isExternalController) {
-        await data.controller.dispose();
-      }
-    }
-    _widgetSoundControllers.clear();
-    _bgmControllers.clear();
-    _bgmOriginalVolumes.clear();
-    _uniqueBGMControllers.clear();
-  }
-
-  /// Check if a sound is playing for a specific widget
-  bool isPlayingForWidget(Key key) {
-    return _widgetSoundControllers.containsKey(key) &&
-        _widgetSoundControllers[key]!.controller.isPlaying;
-  }
-
-  /// Get current route
-  String get currentRoute => _currentRoute;
-
-  /// Get master volume
-  double get masterVolume => _masterVolume;
-
-  /// Check if audio is muted
-  bool get isMuted => _isMuted;
-
-  /// Smoothly transition between BGM tracks
-  Future<void> _crossfadeBGM(String newPath, {double volume = 1.0}) async {
-    if (_isCrossfading) return;
-    _isCrossfading = true;
-
-    try {
-      // Create new BGM player
-      _nextBgmPlayer = await FlameAudio.loop(newPath, volume: 0.0);
-
-      // Start crossfade
-      final totalSteps =
-          (_crossfadeDuration.inMilliseconds / _fadeStepDuration.inMilliseconds)
-              .round();
-      int currentStep = 0;
-
-      void updateVolumes() async {
-        currentStep++;
-        if (currentStep >= totalSteps) {
-          _fadeTimer?.cancel();
-          _fadeTimer = null;
-
-          // Cleanup old player
-          await _bgmPlayer?.stop();
-          await _bgmPlayer?.dispose();
-
-          // Switch to new player
-          _bgmPlayer = _nextBgmPlayer;
-          _nextBgmPlayer = null;
-          _currentBGMVolume = volume;
-
-          _isCrossfading = false;
-          return;
-        }
-
-        // Calculate fade progress with smooth easing
-        final progress = currentStep / totalSteps;
-        final easedProgress = -0.5 * (cos(pi * progress) - 1);
-
-        // Fade out current BGM
-        if (_bgmPlayer != null) {
-          final oldVolume = _currentBGMVolume * (1 - easedProgress);
-          await _bgmPlayer?.setVolume(oldVolume);
-        }
-
-        // Fade in new BGM
-        if (_nextBgmPlayer != null) {
-          final newVolume = volume * easedProgress;
-          await _nextBgmPlayer?.setVolume(newVolume);
-        }
-      }
-
+    /* ── 1.  ABORT CROSSFADE JIKA MASIH BERJALAN ── */
+    if (_crossing) {
       _fadeTimer?.cancel();
-      _fadeTimer = Timer.periodic(_fadeStepDuration, (_) => updateVolumes());
-    } catch (e) {
-      debugPrint('Error during BGM crossfade: $e');
-      _isCrossfading = false;
 
-      // Cleanup on error
-      await _nextBgmPlayer?.dispose();
-      _nextBgmPlayer = null;
-    }
-  }
+      // hentikan calon BGM yang belum sempat jadi aktif
+      if (_bgmNext != null) {
+        await _bgmNext!.stop();
+        await _bgmNext!.dispose();
+        _bgmNext = null;
+      }
 
-  /// Play BGM with crossfade
-  @override
-  Future<void> playBGM(String path, {double volume = 1.0}) async {
-    if (_bgmPlayer != null) {
-      // If we already have a BGM playing, crossfade to the new one
-      await _crossfadeBGM(path,
-          volume: _isDucking ? volume * _duckingVolume : volume);
-    } else {
-      // If no BGM is playing, start normally
-      _bgmPlayer = await FlameAudio.loop(path,
-          volume: _isDucking ? volume * _duckingVolume : volume);
-      _currentBGMVolume = volume;
+      // kembalikan volume player lama ke posisi terakhir agar tidak turun sendiri
+      await _bgm?.setVolume(_bgmVol);
+      _crossing = false;
     }
+
+    /* ── 2.  JIKA BELUM ADA BGM, MAINKAN LANGSUNG ── */
+    if (_bgm == null) {
+      _bgm = await FlameAudio.loop(path, volume: volume);
+      _bgmVol = volume;
+      return;
+    }
+
+    /* ── 3.  LAKUKAN CROSSFADE NORMAL ── */
+    _bgmNext = await FlameAudio.loop(path, volume: 0);
+    final steps = (_crossDur.inMilliseconds / _fadeStep.inMilliseconds).round();
+    var i = 0;
+    _crossing = true;
+
+    _fadeTimer?.cancel();
+    _fadeTimer = Timer.periodic(_fadeStep, (_) async {
+      i++;
+      final t = -0.5 * (cos(pi * i / steps) - 1);
+      await _bgm!.setVolume(_bgmVol * (1 - t));
+      await _bgmNext!.setVolume(volume * t);
+
+      if (i >= steps) {
+        await _bgm!.stop();
+        await _bgm!.dispose();
+        _bgm = _bgmNext;
+        _bgmVol = volume;
+        _bgmNext = null;
+        _fadeTimer?.cancel();
+        _crossing = false;
+      }
+    });
   }
 }
 
-/// Extension for adding sound to widgets
+/* =====================  EXTENSIONS  ===================== */
+
 extension SoundExtension on Widget {
-  /// Add sound to a widget that will play when tapped
+  /// tambahkan efek suara saat tap
   Widget addSound({
-    SoundCategory category = SoundCategory.clickEvent,
     dynamic sound = ClickSound.gameClick,
-    SoundController? controller,
-    double volume = 1.0,
-    bool autoPlay = false,
-    bool loop = false,
+    SoundCategory category = SoundCategory.clickEvent,
+    double volume = 1,
     Key? key,
   }) {
-    return _SoundWidget(
+    return _SoundWrapper(
       child: this,
-      category: category,
       sound: sound,
-      externalController: controller,
+      category: category,
       volume: volume,
-      autoPlay: autoPlay,
-      loop: loop,
       widgetKey: key ?? UniqueKey(),
-      bgm: false,
+      isBgm: false,
+      global: false,
     );
   }
 
-  /// Add background music to a widget
+  /// tambahkan BGM yang nempel pada halaman ini
   Widget addBGM({
     BGMSound sound = BGMSound.birdsSinging,
-    SoundController? controller,
-    double volume = 0.5,
-    bool autoPlay = true,
-    bool loop = true,
-    Key? key,
-    String? route,
+    double volume = .5,
     bool global = false,
+    bool overlay = false, // ⬅️ baru!
+    Key? key,
   }) {
-    final effectiveKey = key ?? UniqueKey();
-    final effectiveController = controller ??
-        SoundController(
-          autoPlay: autoPlay,
-          volume: volume,
-          loop: loop,
-        );
-
-    // Register the BGM controller
-    SoundManager.instance.registerBGM(
-      effectiveController,
-      route: global ? 'global' : route,
-    );
-
-    return _SoundWidget(
+    return _SoundWrapper(
       child: this,
-      category: SoundCategory.bgm,
       sound: sound,
-      externalController: effectiveController,
+      category: SoundCategory.bgm,
       volume: volume,
-      autoPlay: autoPlay,
-      loop: loop,
-      widgetKey: effectiveKey,
-      bgm: true,
-      route: route,
+      widgetKey: key ?? UniqueKey(),
+      isBgm: true,
       global: global,
+      overlay: overlay, // ⬅️ oper ke wrapper
     );
   }
 }
 
-/// Internal widget for handling sound
-class _SoundWidget extends StatefulWidget {
+/* =====================  INTERNAL WRAPPER  ===================== */
+class _SoundWrapper extends StatefulWidget {
   final Widget child;
-  final SoundCategory category;
   final dynamic sound;
-  final SoundController? externalController;
+  final SoundCategory category;
   final double volume;
-  final bool autoPlay;
-  final bool loop;
   final Key widgetKey;
-  final bool bgm;
-  final String? route;
+  final bool isBgm;
   final bool global;
+  final bool overlay; // ★ NEW
 
-  const _SoundWidget({
+  const _SoundWrapper({
     required this.child,
-    required this.category,
     required this.sound,
+    required this.category,
+    required this.volume,
     required this.widgetKey,
-    this.externalController,
-    this.volume = 1.0,
-    this.autoPlay = false,
-    this.loop = false,
-    this.bgm = false,
-    this.route,
-    this.global = false,
+    required this.isBgm,
+    required this.global,
+    this.overlay = false, // ★ NEW
   });
 
   @override
-  _SoundWidgetState createState() => _SoundWidgetState();
+  State<_SoundWrapper> createState() => _SoundWrapperState();
 }
 
-class _SoundWidgetState extends State<_SoundWidget> {
-  late SoundController _controller;
-  bool _isExternalController = false;
+class _SoundWrapperState extends State<_SoundWrapper> {
+  late final SoundController _ctrl;
+  late final String _routeName;
 
   @override
   void initState() {
     super.initState();
-    _initializeController();
+    _ctrl = SoundController(volume: widget.volume, autoPlay: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _afterBuild());
   }
 
-  void _initializeController() {
-    if (widget.externalController != null) {
-      _controller = widget.externalController!;
-      _isExternalController = true;
-    } else {
-      _controller = SoundController(
-        autoPlay: widget.autoPlay,
-        volume: widget.volume * SoundManager.instance.masterVolume,
-        loop: widget.loop,
-      );
-    }
+  void _afterBuild() {
+    _routeName =
+        ModalRoute.of(context)?.settings.name ?? 'route_${hashCode.toString()}';
 
-    // For BGM, set it up differently
-    if (widget.bgm) {
-      _setupBGM();
-    } else {
-      // Register in the sound manager
-      SoundManager.instance.registerWidgetSound(
-        widget.widgetKey,
-        _WidgetSoundData(
-          controller: _controller,
-          isExternalController: _isExternalController,
-          category: widget.category,
-          sound: widget.sound,
-        ),
-      );
-
-      // If autoplay is on, play the sound immediately
-      if (widget.autoPlay) {
-        _controller.playSound(
-          category: widget.category,
-          sound: widget.sound,
-          autoPlay: true,
-        );
-      }
-    }
-  }
-
-  void _setupBGM() async {
-    final path =
-        SoundPaths.instance.getSoundPath(widget.category, widget.sound);
-    if (path == null) return;
-
-    // Store the path in the controller for later use
-    await _controller.playSound(
-      category: widget.category,
-      sound: widget.sound,
-      autoPlay: false, // Don't auto play yet
-    );
-
-    // Register in the sound manager
+    // — register semua widget (agar ducking tetap jalan) —
     SoundManager.instance.registerWidgetSound(
       widget.widgetKey,
       _WidgetSoundData(
-        controller: _controller,
-        isExternalController: _isExternalController,
+        controller: _ctrl,
         category: widget.category,
         sound: widget.sound,
       ),
     );
 
-    // Register BGM with its route
-    if (widget.route != null || widget.global) {
-      SoundManager.instance.registerBGM(
-        _controller,
-        route: widget.global ? 'global' : widget.route,
-      );
+    if (!widget.isBgm) return;
+
+    /* ──────────────── BGM handling ──────────────── */
+    if (widget.overlay) {
+      _startOverlayBgm(); // ★ NEW
+      return;
     }
 
-    // Only play if this is the current route's BGM
-    if (widget.autoPlay &&
-        (widget.global || widget.route == SoundManager.instance.currentRoute)) {
-      await SoundManager.instance.playBGM(
-        path,
-        volume: widget.volume,
-      );
+    // BGM biasa (route-based atau global)
+    SoundManager.instance
+        .registerBgmForRoute(widget.global ? 'global' : _routeName, _ctrl);
+
+    if (widget.global || _routeName == SoundManager.instance._currentRoute) {
+      _startBgm();
+    }
+  }
+
+  /* ---------- normal BGM (route) ---------- */
+  Future<void> _startBgm() async {
+    await _ctrl.playSound(
+      category: widget.category,
+      sound: widget.sound,
+      autoPlay: false,
+    );
+    final path = _ctrl.currentPath;
+    if (path != null) {
+      await SoundManager.instance._playBgm(path, volume: widget.volume);
+    }
+  }
+
+  /* ---------- overlay BGM (dialog dsb.) ---------- */
+  Future<void> _startOverlayBgm() async {
+    // ★ NEW
+    await _ctrl.playSound(
+      category: widget.category,
+      sound: widget.sound,
+      autoPlay: false,
+    );
+    final path = _ctrl.currentPath;
+    if (path != null) {
+      await SoundManager.instance.pushOverlayBGM(path, volume: widget.volume);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.bgm) {
-      return widget.child;
-    }
-
+    if (widget.isBgm) return widget.child; // gesture tak perlu utk BGM
     return GestureDetector(
-      onTap: () {
-        _controller.playSound(
-          category: widget.category,
-          sound: widget.sound,
-          autoPlay: true,
-          volume: widget.volume,
-        );
-      },
+      onTap: () => _ctrl.playSound(
+        category: widget.category,
+        sound: widget.sound,
+        autoPlay: true,
+      ),
       child: widget.child,
     );
   }
 
   @override
   void dispose() {
-    SoundManager.instance.unregisterWidgetSound(widget.widgetKey);
-    if (!_isExternalController) {
-      _controller.dispose();
+    // jika ini overlay, balikan BGM route
+    if (widget.isBgm && widget.overlay) {
+      // ★ NEW
+      SoundManager.instance.popOverlayBGM();
     }
+
+    SoundManager.instance.unregisterWidgetSound(widget.widgetKey);
+    _ctrl.dispose();
     super.dispose();
   }
 }
 
-/// Widget that provides route-aware BGM
+/* =====================  ROUTE OBSERVER  ===================== */
+
 class SoundRouteObserver extends NavigatorObserver {
   @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPush(route, previousRoute);
-    if (route.settings.name != null) {
-      SoundManager.instance.setCurrentRoute(route.settings.name!);
-    }
-  }
-
+  void didPush(Route route, Route? p) =>
+      _set(route); // push → halaman baru aktif
   @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPop(route, previousRoute);
-    if (previousRoute?.settings.name != null) {
-      SoundManager.instance.setCurrentRoute(previousRoute!.settings.name!);
-    }
-  }
-
+  void didPop(Route route, Route? p) =>
+      _set(p); // pop → kembali ke halaman sebelumnya
   @override
-  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    if (newRoute?.settings.name != null) {
-      SoundManager.instance.setCurrentRoute(newRoute!.settings.name!);
-    }
+  void didReplace({Route? newRoute, Route? oldRoute}) => _set(newRoute);
+
+  void _set(Route? r) {
+    final n = r?.settings.name;
+    if (n != null) SoundManager.instance.setCurrentRoute(n);
   }
 }

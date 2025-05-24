@@ -187,8 +187,6 @@ class _FirstPageState extends State<FirstPage> {
     ).addBGM(
       sound: BGMSound.birdsSinging,
       volume: _bgmVolume,
-      autoPlay: _bgmPlaying,
-      route: '/',
     );
   }
 
@@ -237,7 +235,7 @@ class _FirstPageState extends State<FirstPage> {
         ),
       ),
     ).addSound(
-      category: category,
+      category: SoundCategory.notification,
       sound: sound,
     );
   }
@@ -257,6 +255,12 @@ class _SecondPageState extends State<SecondPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      /* 2.  **FloatingActionButton** (atau bisa letakkan di mana saja) */
+      floatingActionButton: FloatingActionButton.extended(
+        label: const Text('Open Dialog'),
+        icon: const Icon(Icons.chat_bubble),
+        onPressed: _openDialog, // ⬅️ panggil fungsi di bawah
+      ),
       appBar: AppBar(
         title: const Text('Second Page - Flute BGM'),
         leading: IconButton(
@@ -376,8 +380,6 @@ class _SecondPageState extends State<SecondPage> {
     ).addBGM(
       sound: BGMSound.fluteMusic,
       volume: _bgmVolume,
-      autoPlay: _bgmPlaying,
-      route: '/second',
     );
   }
 
@@ -428,6 +430,47 @@ class _SecondPageState extends State<SecondPage> {
     ).addSound(
       category: category,
       sound: sound,
+    );
+  }
+
+  void _openDialog() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dialog Barrier',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) {
+        return Center(
+          child: Material(
+            elevation: 12,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: 280,
+              height: 220,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Dialog with its own BGM',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    child: const Text('Close'),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+          ).addBGM(
+            sound: BGMSound.birdsSinging,
+            volume: 0.8,
+            overlay: true,
+          ),
+        );
+      },
     );
   }
 }

@@ -19,9 +19,9 @@ class SoundPaths {
 
   final Map<BGMSound, String> bgmSoundPaths = {
     BGMSound.birdsSinging:
-        '${_assetPrefix}assets/sounds/bgm/mixkit-little-birds-singing-in-the-trees-17.wav',
+        '${_assetPrefix}assets/sounds/bgm/children_learning.m4a',
     BGMSound.fluteMusic:
-        '${_assetPrefix}assets/sounds/bgm/mixkit-melodical-flute-music-notification-2310.wav',
+        '${_assetPrefix}assets/sounds/bgm/cozy lofi fireside short 30.m4a',
   };
 
   final Map<SFXSound, String> sfxSoundPaths = {
