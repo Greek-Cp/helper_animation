@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:helper_animation/helper_animation.dart';
-import 'dart:async';
-/* ──────────────────────────────────────────────────────────────
- *  >>> paste di sini kode SoundController, SoundManager,
- *  >>> SoundExtension, SoundRouteObserver, enum-enum, dll.
- *  (yang sudah Anda punya persis se=erti sebelumnya)
- * ────────────────────────────────────────────────────────────── */
+import 'package:helper_animation/sound_manager/bgm_manager.dart';
+import 'package:helper_animation/sound_manager/sound_enums.dart';
+
+/// Inisialisasi helper animation (opsional, untuk preload)
+Future<void> initHelperAnimation() async {
+  try {
+    debugPrint('[INIT] Starting helper animation initialization...');
+
+    // Preload semua sound files
+    await BgmManager.instance.preloadAll();
+
+    debugPrint('[INIT] Helper animation initialized successfully');
+  } catch (e) {
+    debugPrint('[INIT] Error initializing helper animation: $e');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlameAudio.audioCache.prefix = '';
-  // Optional: preload all assets to avoid first click delay
-  await FlameAudio.audioCache.loadAll(
-    SoundPaths.instance.getAllSoundPaths(),
-  );
+
+  // Inisialisasi helper animation
+  await initHelperAnimation();
 
   runApp(const MyApp());
 }
@@ -24,448 +31,79 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BGM Transition Test',
+      title: 'Helper Animation Example',
+      navigatorObservers: [routeObserver], // Penting untuk BGM navigation
       theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.light,
       ),
-      // Add route observer for BGM transitions
-      navigatorObservers: [
-        SoundRouteObserver(),
-      ],
-      // Define named routes
-      routes: {
-        '/': (context) => const FirstPage(),
-        '/second': (context) => const SecondPage(),
-      },
+      home: const MyHomePage(),
     );
   }
 }
 
-class FirstPage extends StatefulWidget {
-  const FirstPage({super.key});
-
-  @override
-  State<FirstPage> createState() => _FirstPageState();
-}
-
-class _FirstPageState extends State<FirstPage> {
-  bool _bgmPlaying = true;
-  double _bgmVolume = 0.8;
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('First Page - Birds BGM'),
-        actions: [
-          // BGM Play/Pause
-          IconButton(
-            icon: Icon(_bgmPlaying ? Icons.music_note : Icons.music_off),
-            onPressed: () => setState(() => _bgmPlaying = !_bgmPlaying),
-          ),
-        ],
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Helper Animation Example'),
       ),
-      body: Column(
-        children: [
-          // Info Card
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BGM: Birds Singing',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• Current BGM Volume: ${(_bgmVolume * 100).round()}%\n'
-                    '• Tap the button below to go to second page\n'
-                    '• Listen to the smooth BGM transition',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Navigation Button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: FilledButton.icon(
-              icon: const Icon(Icons.music_note),
-              label: const Text('Go to Flute Music Page'),
-              onPressed: () => Navigator.pushNamed(context, '/second'),
-            ),
-          ),
-
-          // Sound Buttons
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(16),
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              children: [
-                _buildSoundButton(
-                  'Air Woosh',
-                  Icons.air,
-                  Colors.blue,
-                  SoundCategory.sfx,
-                  SFXSound.airWoosh,
-                ),
-                _buildSoundButton(
-                  'Retro Arcade',
-                  Icons.games,
-                  Colors.purple,
-                  SoundCategory.notification,
-                  NotificationSound.retroArcade,
-                ),
-                _buildSoundButton(
-                  'Mystery Alert',
-                  Icons.notification_important,
-                  Colors.orange,
-                  SoundCategory.notification,
-                  NotificationSound.mysteryAlert,
-                ),
-                _buildSoundButton(
-                  'Game Click',
-                  Icons.mouse,
-                  Colors.green,
-                  SoundCategory.clickEvent,
-                  ClickSound.gameClick,
-                ),
-              ],
-            ),
-          ),
-
-          // Volume Slider
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'BGM Volume',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.volume_up),
-                    Expanded(
-                      child: Slider(
-                        value: _bgmVolume,
-                        onChanged: (v) => setState(() => _bgmVolume = v),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 50,
-                      child: Text(
-                        '${(_bgmVolume * 100).round()}%',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ).addBGM(
-      sound: BGMSound.birdsSinging,
-      volume: _bgmVolume,
-    );
-  }
-
-  Widget _buildSoundButton(
-    String label,
-    IconData icon,
-    Color color,
-    SoundCategory category,
-    dynamic sound,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: color,
+          children: <Widget>[
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('Click Me'),
+            ).addSound(ClickSound.gameClick, SoundType.click),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Debug BGM state
+                BgmManager.instance.debugState();
+                BgmManager.instance.checkPlayerState();
+              },
+              child: const Text('Debug BGM State'),
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Tap to play',
-              style: TextStyle(
-                color: color.withOpacity(0.7),
-                fontSize: 12,
-              ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SecondPage()),
+                );
+              },
+              child: const Text('Go to Page with BGM'),
             ),
           ],
         ),
       ),
-    ).addSound(
-      category: SoundCategory.notification,
-      sound: sound,
-    );
+    ).addBGMGlobal([BGMSound.birdsSinging, BGMSound.fluteMusic]);
   }
 }
 
-class SecondPage extends StatefulWidget {
+class SecondPage extends StatelessWidget {
   const SecondPage({super.key});
 
   @override
-  State<SecondPage> createState() => _SecondPageState();
-}
-
-class _SecondPageState extends State<SecondPage> {
-  bool _bgmPlaying = true;
-  double _bgmVolume = 0.8;
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /* 2.  **FloatingActionButton** (atau bisa letakkan di mana saja) */
-      floatingActionButton: FloatingActionButton.extended(
-        label: const Text('Open Dialog'),
-        icon: const Icon(Icons.chat_bubble),
-        onPressed: _openDialog, // ⬅️ panggil fungsi di bawah
-      ),
       appBar: AppBar(
-        title: const Text('Second Page - Flute BGM'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          // BGM Play/Pause
-          IconButton(
-            icon: Icon(_bgmPlaying ? Icons.music_note : Icons.music_off),
-            onPressed: () => setState(() => _bgmPlaying = !_bgmPlaying),
-          ),
-        ],
+        title: const Text('Page with Specific BGM'),
       ),
-      body: Column(
-        children: [
-          // Info Card
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BGM: Flute Music',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• Current BGM Volume: ${(_bgmVolume * 100).round()}%\n'
-                    '• Press back to return to first page\n'
-                    '• Listen to the smooth BGM transition',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Sound Buttons
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(16),
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              children: [
-                _buildSoundButton(
-                  'Air Woosh',
-                  Icons.air,
-                  Colors.blue,
-                  SoundCategory.sfx,
-                  SFXSound.airWoosh,
-                ),
-                _buildSoundButton(
-                  'Retro Arcade',
-                  Icons.games,
-                  Colors.purple,
-                  SoundCategory.notification,
-                  NotificationSound.retroArcade,
-                ),
-                _buildSoundButton(
-                  'Mystery Alert',
-                  Icons.notification_important,
-                  Colors.orange,
-                  SoundCategory.notification,
-                  NotificationSound.mysteryAlert,
-                ),
-                _buildSoundButton(
-                  'Game Click',
-                  Icons.mouse,
-                  Colors.green,
-                  SoundCategory.clickEvent,
-                  ClickSound.gameClick,
-                ),
-              ],
-            ),
-          ),
-
-          // Volume Slider
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'BGM Volume',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.volume_up),
-                    Expanded(
-                      child: Slider(
-                        value: _bgmVolume,
-                        onChanged: (v) => setState(() => _bgmVolume = v),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 50,
-                      child: Text(
-                        '${(_bgmVolume * 100).round()}%',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ).addBGM(
-      sound: BGMSound.fluteMusic,
-      volume: _bgmVolume,
-    );
-  }
-
-  Widget _buildSoundButton(
-    String label,
-    IconData icon,
-    Color color,
-    SoundCategory category,
-    dynamic sound,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+      body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 48,
-              color: color,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Tap to play',
-              style: TextStyle(
-                color: color.withOpacity(0.7),
-                fontSize: 12,
-              ),
-            ),
+            Text('This page has specific BGM'),
+            Text('BGM will change when you enter this page'),
           ],
         ),
       ),
-    ).addSound(
-      category: category,
-      sound: sound,
-    );
-  }
-
-  void _openDialog() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Dialog Barrier',
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) {
-        return Center(
-          child: Material(
-            elevation: 12,
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              width: 280,
-              height: 220,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Dialog with its own BGM',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    child: const Text('Close'),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-            ),
-          ).addBGM(
-            sound: BGMSound.birdsSinging,
-            volume: 0.8,
-            overlay: true,
-          ),
-        );
-      },
-    );
+    ).addBGM(BGMSound.fluteMusic);
   }
 }

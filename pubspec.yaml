@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   auto_size_text: ^3.0.0  
   flame_audio: ^2.10.7
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -22,10 +23,10 @@ flutter:
   assets:
     - assets/sounds/bgm/
     - assets/sounds/click/
-    - assets/sounds/notification/
     - assets/sounds/sfx/
-
+    - assets/sounds/notification/
 # This section declares that flame_audio is exported to consumers of your package
 export:
   flame_audio: ^2.10.7
+  shared_preferences: ^2.5.3
 
