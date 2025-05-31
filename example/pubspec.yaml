@@ -15,3 +15,8 @@ dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - packages/helper_animation/assets/sounds/bgm/
+    - packages/helper_animation/assets/sounds/click/
+    - packages/helper_animation/assets/sounds/notification/
+    - packages/helper_animation/assets/sounds/sfx/
