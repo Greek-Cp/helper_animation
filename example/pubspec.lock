@@ -89,7 +89,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.2"
   just_audio:
     dependency: transitive
     description:
