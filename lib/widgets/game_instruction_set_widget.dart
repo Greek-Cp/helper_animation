@@ -8,6 +8,7 @@ class GameInstructionSet extends StatefulWidget {
   final BorderRadius? borderRadius;
   final FontWeight? fontWeight;
   final TextAlign? textAlign;
+  final double textScale;
 
   const GameInstructionSet({
     super.key,
@@ -19,6 +20,7 @@ class GameInstructionSet extends StatefulWidget {
     this.fontWeight,
     this.textColor,
     this.textAlign,
+    this.textScale = 1.0,
   });
 
   @override
@@ -45,9 +47,9 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        double low = _kMinFont;
-        double high = _kMaxFont;
-        double bestFont = _kMinFont;
+        double low = _kMinFont * widget.textScale;
+        double high = _kMaxFont * widget.textScale;
+        double bestFont = _kMinFont * widget.textScale;
         double lineHeight = 1.2;
 
         final maxWidth = constraints.maxWidth - padding.horizontal;
@@ -87,6 +89,13 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
 
         final actualLines = finalPainter.computeLineMetrics().length;
         lineHeight = actualLines == 3 ? 1.15 : (actualLines == 2 ? 1.2 : 1.28);
+
+        // Ensure minFontSize is a multiple of stepGranularity
+        const stepGranularity = 0.5;
+        final baseMinFontSize = 4 * widget.textScale;
+        final minFontSize =
+            (baseMinFontSize / stepGranularity).round() * stepGranularity;
+
         return Container(
           width: double.infinity,
           margin: margin,
@@ -98,15 +107,15 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
           child: AutoSizeText(
             widget.text,
             maxLines: 3,
-            minFontSize: 4,
-            stepGranularity: 0.5,
+            minFontSize: minFontSize,
+            stepGranularity: stepGranularity,
             overflowReplacement: const Text(
               'Text too long',
               style: TextStyle(color: Colors.red),
             ),
             textAlign: widget.textAlign ?? alignDefault,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 22 * widget.textScale,
               fontWeight: widget.fontWeight ?? weightDefault,
               color: widget.textColor ?? textDefault,
               height: 1.2,

@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  just_audio: ^0.9.46
   auto_size_text: ^3.0.0  
 
 dev_dependencies:
@@ -17,10 +16,3 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
 
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/sounds/bgm/
-    - assets/sounds/click/
-    - assets/sounds/notification/
-    - assets/sounds/sfx/
