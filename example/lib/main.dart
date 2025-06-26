@@ -6,7 +6,7 @@ import 'package:helper_animation/widgets/game_instruction_set_widget.dart';
 import 'package:helper_animation_example/animation_demo.dart';
 
 void main() {
-  runApp(const AnimationDemo());
+  runApp(const AnimationDemoApp());
 }
 
 class AnimationDemoApp extends StatelessWidget {
@@ -17,7 +17,7 @@ class AnimationDemoApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Animation Demo',
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: AnimationDemo(),
     );
   }
 }
