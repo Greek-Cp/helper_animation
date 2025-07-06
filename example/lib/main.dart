@@ -17,7 +17,7 @@ class AnimationDemoApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Animation Demo',
       debugShowCheckedModeBanner: false,
-      home: AnimationDemo(),
+      home: HomePage(),
     );
   }
 }
@@ -67,6 +67,7 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: Container(
                     margin: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                    padding: AppSizeMinigame.paddingGlobalMinigame,
                     decoration: ShapeDecoration(
                       color: Color(0xFFA1C0F2),
                       shape: RoundedRectangleBorder(
@@ -86,9 +87,8 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       children: [
                         GameInstructionSet(
-                          text:
-                              "Express this number as a prduct of its prime factors.",
-                          textScale: 0.8,
+                          text: "Solve or build expression in the right order.",
+                          textScale: 0.6,
                         ),
                       ],
                     ),

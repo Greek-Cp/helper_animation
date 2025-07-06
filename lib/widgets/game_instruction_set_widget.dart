@@ -14,7 +14,7 @@ class GameInstructionSet extends StatefulWidget {
     super.key,
     required this.text,
     this.padding,
-    this.margin,
+    this.margin = EdgeInsets.zero,
     this.backgroundColor,
     this.borderRadius,
     this.fontWeight,
