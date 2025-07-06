@@ -10,5 +10,5 @@ class AppSizeMinigame {
   static const EdgeInsets paddingGlobalMinigame = EdgeInsets.only(
       left: sizePaddingSymetric,
       right: sizePaddingSymetric,
-      top: sizePaddingSymetric);
+      top: sizePaddingSymetric - 2);
 }
