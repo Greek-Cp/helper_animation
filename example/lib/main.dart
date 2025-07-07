@@ -59,6 +59,9 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: Container(
             width: double.infinity,
+            margin: EdgeInsets.symmetric(
+                horizontal: AppSizeMinigame.sizeMarginCardGame,
+                vertical: AppSizeMinigame.sizeMarginCardGame),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -66,7 +69,6 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Expanded(
                   child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                     padding: AppSizeMinigame.paddingGlobalMinigame,
                     decoration: ShapeDecoration(
                       color: Color(0xFFA1C0F2),
@@ -87,7 +89,7 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       children: [
                         GameInstructionSet(
-                          text: "Solve or build expression in the right order.",
+                          text: "Adjust the arrow to make an angle",
                           textScale: 0.6,
                         ),
                       ],
