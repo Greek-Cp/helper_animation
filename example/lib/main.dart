@@ -17,7 +17,7 @@ class AnimationDemoApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Animation Demo',
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: AnimationDemo(),
     );
   }
 }

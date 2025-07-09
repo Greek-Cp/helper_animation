@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:helper_animation/constants/enums.dart';
 import 'package:helper_animation/helper_animation.dart';
+import 'dart:async'; // Added for Timer
 
 class AnimationDemo extends StatefulWidget {
   const AnimationDemo({Key? key}) : super(key: key);
@@ -308,93 +309,146 @@ class _AnimationDemoState extends State<AnimationDemo>
           ],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'PREVIEW',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 12,
-                letterSpacing: 2,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Spacer(flex: 1),
-
-            // Animation Preview Widget
-            Center(
-              child: MouseRegion(
-                onEnter: (_) => _scaleController.forward(),
-                onExit: (_) => _scaleController.reverse(),
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Draggable(
-                    feedback: Material(
-                      color: Colors.transparent,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: _effectColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _effectColor.withOpacity(0.5),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Tap Me',
-                          style: TextStyle(
-                            color: _getContrastColor(_effectColor),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ).animationDraggableFeedback(
-                        type: DragFeedbackAnim.jellyfishBreathing),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: _effectColor,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _effectColor.withOpacity(0.3),
-                            blurRadius: 15,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Tap Me',
-                        style: TextStyle(
-                          color: _getContrastColor(_effectColor),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ).withEffectAnimation(
-                    animationType: _currentType,
-                    effectColor: _effectColor,
-                    autoAnimate: _autoAnimate,
-                    repeatWhenDrag: _repeatWhenDrag,
-                    radiusMultiplier: _radiusMultiplier,
-                    position: _position,
-                    customOffset: _useCustomOffset
-                        ? Offset(_offsetX, _offsetY)
-                        : Offset.zero,
-                    duration: Duration(milliseconds: _durationMs),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'ALL ANIMATIONS',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 12,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _autoAnimate ? Colors.green : Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _autoAnimate = !_autoAnimate;
+                    });
+                  },
+                  icon: Icon(_autoAnimate ? Icons.pause : Icons.play_arrow),
+                  label: Text(_autoAnimate ? 'Pause All' : 'Auto Play All'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 3,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1,
+                // scrollable
+                physics: const BouncingScrollPhysics(),
+                children: AnimationUndergroundType.values.map((type) {
+                  return Container(
+                    width: 100,
+                    height: 100,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: Draggable(
+                            feedback: Material(
+                              color: Colors.transparent,
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: _effectColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _effectColor.withOpacity(0.5),
+                                      blurRadius: 20,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  type.toString().split('.').last,
+                                  style: TextStyle(
+                                    color: _getContrastColor(_effectColor),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ).animationDraggableFeedback(
+                                type: DragFeedbackAnim.jellyfishBreathing),
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: _effectColor,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _effectColor.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                type.toString().split('.').last,
+                                style: TextStyle(
+                                  color: _getContrastColor(_effectColor),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ).withEffectAnimation(
+                            animationType: type,
+                            enableMixedColor: true,
+                            effectColor: _effectColor,
+                            autoAnimate: _autoAnimate,
+                            repeatWhenDrag: _repeatWhenDrag,
+                            radiusMultiplier: _radiusMultiplier,
+                            position: _position,
+                            customOffset: _useCustomOffset
+                                ? Offset(_offsetX, _offsetY)
+                                : Offset.zero,
+                            duration: Duration(milliseconds: _durationMs),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          type.toString().split('.').last,
+                          style: TextStyle(
+                            color: _effectColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-
             const SizedBox(height: 12),
             Text(
               _autoAnimate ? 'Auto-animating' : 'Tap to see animation',
@@ -404,62 +458,23 @@ class _AnimationDemoState extends State<AnimationDemo>
                 fontStyle: FontStyle.italic,
               ),
             ),
-
-            const Spacer(flex: 1),
-
-            // Animation info
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '${_currentType.toString().split('.').last}',
-                    style: TextStyle(
-                      color: _effectColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '${_position.toString().split('.').last}${_useCustomOffset ? ' (Custom)' : ''}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'Duration: ${_durationMs}ms',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 16),
-
-            // Copy button
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _effectColor,
-                foregroundColor: _getContrastColor(_effectColor),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            // Copy button (tetap satu, copy code dari setting yang sedang aktif)
+            Center(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _effectColor,
+                  foregroundColor: _getContrastColor(_effectColor),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
+                onPressed: _copyCodeToClipboard,
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy Code'),
               ),
-              onPressed: _copyCodeToClipboard,
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy Code'),
             ),
           ],
         ),
@@ -511,6 +526,17 @@ class _AnimationDemoState extends State<AnimationDemo>
                       );
                     },
                     child: Text("Test Drag Drop")),
+                const SizedBox(height: 8),
+                GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AnimationDraggableFeedbackDemo(),
+                        ),
+                      );
+                    },
+                    child: Text("Demo Draggable Feedback")),
                 const Text(
                   'ANIMATION SETTINGS',
                   style: TextStyle(
@@ -1209,359 +1235,431 @@ class MultiDragTargetExample extends StatefulWidget {
 }
 
 class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
-  // Data untuk draggable items
-  final List<Map<String, dynamic>> _items = [
-    {'id': '1', 'name': 'Item 1', 'color': Colors.red},
-    {'id': '2', 'name': 'Item 2', 'color': Colors.blue},
-    {'id': '3', 'name': 'Item 3', 'color': Colors.green},
-    {'id': '4', 'name': 'Item 4', 'color': Colors.orange},
-  ];
+  // Shared animation settings
+  Color _effectColor = const Color(0xFF8BB3C5);
+  double _radiusMultiplier = 1.0;
+  bool _useCustomOffset = false;
+  double _offsetX = 0.0;
+  double _offsetY = 0.0;
+  bool _repeatWhenDrag = true;
+  bool _autoAnimate = false;
+  int _durationMs = 2400;
+  AnimationPosition _position = AnimationPosition.outside;
+  bool _enableMixedColor = true;
 
-  // Data untuk drop targets
-  final List<Map<String, dynamic>> _targets = [
-    {
-      'id': 'target1',
-      'name': 'Target 1',
-      'position': 'top-left',
-      'itemId': null
-    },
-    {
-      'id': 'target2',
-      'name': 'Target 2',
-      'position': 'top-right',
-      'itemId': null
-    },
-    {
-      'id': 'target3',
-      'name': 'Target 3',
-      'position': 'bottom-left',
-      'itemId': null
-    },
-    {
-      'id': 'target4',
-      'name': 'Target 4',
-      'position': 'bottom-right',
-      'itemId': null
-    },
-  ];
-
-  // Satu controller untuk setiap target
-  final Map<String, EffectAnimationController> _controllers = {
-    'target1': EffectAnimationController(),
-    'target2': EffectAnimationController(),
-    'target3': EffectAnimationController(),
-    'target4': EffectAnimationController(),
-  };
-
-  // Pengaturan animasi
-  AnimationUndergroundType _AnimationUndergroundType =
-      AnimationUndergroundType.firework;
-  double _radiusMultiplier = 1.8;
+  late List<EffectAnimationController> _controllers;
+  Timer? _autoPlayTimer;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Drag & Drop Targets'),
-        backgroundColor: Colors.deepPurple.shade800,
-      ),
-      body: Stack(
-        children: [
-          // Main content
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.deepPurple.shade800,
-                  Colors.deepPurple.shade900
-                ],
-              ),
-            ),
-            child: Column(
-              children: [
-                // Draggable Items (di bagian atas)
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(
-                          AppSizeMinigame.borderRadiusGlobalMinigame),
-                      bottomRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Drag items to the targets below:',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: _items.map((item) {
-                          // Check if this item is already dropped in any target
-                          bool isDropped = _targets
-                              .any((target) => target['itemId'] == item['id']);
-
-                          return Opacity(
-                            opacity: isDropped ? 0.5 : 1.0,
-                            child: Draggable<Map<String, dynamic>>(
-                              data: item,
-                              feedback: Material(
-                                color: Colors.transparent,
-                                child: Container(
-                                  width: 70,
-                                  height: 70,
-                                  decoration: BoxDecoration(
-                                    color: item['color'].withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 5,
-                                        offset: Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      item['name'],
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              child: Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  color: item['color'],
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 3,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    item['name'],
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Drop targets (di bagian bawah tanpa grid)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Stack(
-                      children: _targets.map((target) {
-                        final targetId = target['id'];
-                        final droppedItemId = target['itemId'];
-                        final position = target['position'];
-
-                        // Get color and name info if an item is dropped here
-                        Color targetColor = Colors.grey.shade800;
-                        String targetText = target['name'];
-
-                        if (droppedItemId != null) {
-                          final droppedItem = _items.firstWhere(
-                              (item) => item['id'] == droppedItemId);
-                          targetColor = droppedItem['color'];
-                          targetText = droppedItem['name'];
-                        }
-
-                        // Posisi berdasarkan properti position
-                        Alignment alignment;
-                        switch (position) {
-                          case 'top-left':
-                            alignment = Alignment.topLeft;
-                            break;
-                          case 'top-right':
-                            alignment = Alignment.topRight;
-                            break;
-                          case 'bottom-left':
-                            alignment = Alignment.bottomLeft;
-                            break;
-                          case 'bottom-right':
-                            alignment = Alignment.bottomRight;
-                            break;
-                          default:
-                            alignment = Alignment.center;
-                        }
-
-                        return Align(
-                          alignment: alignment,
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: DragTarget<Map<String, dynamic>>(
-                              onWillAccept: (data) {
-                                // Only accept if no item is already here
-                                return target['itemId'] == null;
-                              },
-                              onAccept: (item) {
-                                setState(() {
-                                  // First, check if this item is already in another target
-                                  for (var t in _targets) {
-                                    if (t['itemId'] == item['id']) {
-                                      t['itemId'] =
-                                          null; // Remove from previous target
-                                    }
-                                  }
-
-                                  // Then place it in this target
-                                  target['itemId'] = item['id'];
-                                });
-
-                                // Trigger animation
-                                _controllers[targetId]?.triggerAnimation();
-                              },
-                              builder: (context, candidateData, rejectedData) {
-                                final bool isTargeted =
-                                    candidateData.isNotEmpty;
-
-                                return Container(
-                                  width: 120,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    color: targetColor,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isTargeted
-                                          ? Colors.white
-                                          : Colors.white30,
-                                      width: isTargeted ? 3 : 1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 8,
-                                        offset: Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text(
-                                        targetText,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                ).withEffectAnimation(
-                                  // Gunakan nilai dari state class
-                                  animationType: _AnimationUndergroundType,
-                                  effectColor: droppedItemId != null
-                                      ? _items.firstWhere((item) =>
-                                          item['id'] == droppedItemId)['color']
-                                      : Colors.blueAccent,
-                                  customOffset: Offset.zero,
-                                  radiusMultiplier: _radiusMultiplier,
-                                  controller: _controllers[targetId],
-                                  enableMixedColor: true,
-                                  duration: const Duration(
-                                      milliseconds:
-                                          1200), // Durasi lebih pendek
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-
-                // Reset button
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        // Reset all targets
-                        for (var target in _targets) {
-                          target['itemId'] = null;
-                        }
-                      });
-                    },
-                    icon: Icon(Icons.refresh),
-                    label: Text('Reset All'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Panel pengaturan melayang
-          FloatingAnimationPanel(
-            currentType: _AnimationUndergroundType,
-            currentRadius: _radiusMultiplier,
-            onTypeChanged: (type) {
-              setState(() {
-                _AnimationUndergroundType = type;
-              });
-            },
-            onRadiusChanged: (radius) {
-              setState(() {
-                _radiusMultiplier = radius;
-              });
-            },
-            onPreviewTap: () {
-              // Trigger semua controller animasi untuk preview
-              _controllers.forEach((key, controller) {
-                controller.triggerAnimation();
-              });
-            },
-          ),
-        ],
-      ),
+  void initState() {
+    super.initState();
+    _controllers = List.generate(
+      AnimationUndergroundType.values.length,
+      (_) => EffectAnimationController(),
     );
   }
 
   @override
   void dispose() {
-    // Dispose semua controllers jika diperlukan
+    _autoPlayTimer?.cancel();
+    for (final c in _controllers) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = Timer.periodic(
+      Duration(milliseconds: _durationMs + 200),
+      (_) {
+        for (final c in _controllers) {
+          c.triggerAnimation();
+        }
+      },
+    );
+    // Trigger first play immediately
+    for (final c in _controllers) {
+      c.triggerAnimation();
+    }
+  }
+
+  void _stopAutoPlay() {
+    _autoPlayTimer?.cancel();
+  }
+
+  void _toggleAutoAnimate() {
+    setState(() {
+      _autoAnimate = !_autoAnimate;
+      if (_autoAnimate) {
+        _startAutoPlay();
+      } else {
+        _stopAutoPlay();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('All Animations Preview'),
+        backgroundColor: Colors.deepPurple.shade800,
+      ),
+      backgroundColor: Colors.grey.shade900,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Panel pengaturan di atas grid
+            _buildSettingsPanel(),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GridView.count(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1,
+                  physics: const BouncingScrollPhysics(),
+                  children: List.generate(
+                      AnimationUndergroundType.values.length, (index) {
+                    final type = AnimationUndergroundType.values[index];
+                    return Container(
+                      width: 100,
+                      height: 100,
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 80,
+                            height: 80,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: _effectColor,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _effectColor.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                type.toString().split('.').last,
+                                style: TextStyle(
+                                  color: _getContrastColor(_effectColor),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ).withEffectAnimation(
+                              animationType: type,
+                              enableMixedColor: _enableMixedColor,
+                              effectColor: _effectColor,
+                              autoAnimate: false, // manual trigger only
+                              repeatWhenDrag: _repeatWhenDrag,
+                              radiusMultiplier: _radiusMultiplier,
+                              position: _position,
+                              customOffset: _useCustomOffset
+                                  ? Offset(_offsetX, _offsetY)
+                                  : Offset.zero,
+                              duration: Duration(milliseconds: _durationMs),
+                              controller: _controllers[index],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            type.toString().split('.').last,
+                            style: TextStyle(
+                              color: _effectColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsPanel() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        color: Colors.deepPurple.shade900.withOpacity(0.7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Settings',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _autoAnimate ? Colors.green : Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: _toggleAutoAnimate,
+                    icon: Icon(_autoAnimate ? Icons.pause : Icons.play_arrow),
+                    label: Text(_autoAnimate ? 'Pause All' : 'Auto Play All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text('Mixed Color:', style: TextStyle(color: Colors.white)),
+                  Switch(
+                    value: _enableMixedColor,
+                    activeColor: _effectColor,
+                    onChanged: (value) {
+                      setState(() {
+                        _enableMixedColor = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text('Color:', style: TextStyle(color: Colors.white)),
+                  const SizedBox(width: 8),
+                  ...[
+                    Colors.red,
+                    Colors.yellow,
+                    Colors.green,
+                    Colors.blue,
+                    Colors.purple,
+                    Colors.orange,
+                    Colors.pink,
+                    Colors.teal,
+                  ].map((color) => GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _effectColor = color;
+                          });
+                        },
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _effectColor == color
+                                  ? Colors.white
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      )),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Duration:', style: TextStyle(color: Colors.white)),
+                  Expanded(
+                    child: Slider(
+                      value: _durationMs.toDouble(),
+                      min: 500,
+                      max: 5000,
+                      divisions: 45,
+                      label: _durationMs.toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          _durationMs = value.toInt();
+                          if (_autoAnimate) {
+                            _startAutoPlay();
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      _durationMs.toString(),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Radius:', style: TextStyle(color: Colors.white)),
+                  Expanded(
+                    child: Slider(
+                      value: _radiusMultiplier,
+                      min: 0.5,
+                      max: 3.0,
+                      divisions: 25,
+                      label: _radiusMultiplier.toStringAsFixed(1),
+                      onChanged: (value) {
+                        setState(() {
+                          _radiusMultiplier = value;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      _radiusMultiplier.toStringAsFixed(1),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Position:', style: TextStyle(color: Colors.white)),
+                  const SizedBox(width: 8),
+                  DropdownButton<AnimationPosition>(
+                    value: _position,
+                    dropdownColor: Colors.deepPurple.shade900,
+                    style: const TextStyle(color: Colors.white),
+                    onChanged: (AnimationPosition? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _position = newValue;
+                          _useCustomOffset = false;
+                        });
+                      }
+                    },
+                    items:
+                        AnimationPosition.values.map((AnimationPosition pos) {
+                      return DropdownMenuItem<AnimationPosition>(
+                        value: pos,
+                        child: Text(pos.toString().split('.').last),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Repeat When Drag:',
+                      style: TextStyle(color: Colors.white)),
+                  Switch(
+                    value: _repeatWhenDrag,
+                    activeColor: _effectColor,
+                    onChanged: (value) {
+                      setState(() {
+                        _repeatWhenDrag = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Custom Offset:', style: TextStyle(color: Colors.white)),
+                  Switch(
+                    value: _useCustomOffset,
+                    activeColor: _effectColor,
+                    onChanged: (value) {
+                      setState(() {
+                        _useCustomOffset = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (_useCustomOffset) ...[
+                Row(
+                  children: [
+                    Text('Offset X:', style: TextStyle(color: Colors.white)),
+                    Expanded(
+                      child: Slider(
+                        value: _offsetX,
+                        min: -100,
+                        max: 100,
+                        divisions: 20,
+                        label: _offsetX.toStringAsFixed(0),
+                        onChanged: (value) {
+                          setState(() {
+                            _offsetX = value;
+                          });
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 50,
+                      child: Text('${_offsetX.toStringAsFixed(0)}px',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text('Offset Y:', style: TextStyle(color: Colors.white)),
+                    Expanded(
+                      child: Slider(
+                        value: _offsetY,
+                        min: -100,
+                        max: 100,
+                        divisions: 20,
+                        label: _offsetY.toStringAsFixed(0),
+                        onChanged: (value) {
+                          setState(() {
+                            _offsetY = value;
+                          });
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 50,
+                      child: Text('${_offsetY.toStringAsFixed(0)}px',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getContrastColor(Color backgroundColor) {
+    return backgroundColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
   }
 }
 
@@ -1757,5 +1855,74 @@ class _FloatingAnimationPanelState extends State<FloatingAnimationPanel> {
       default:
         return type.toString().split('.').last;
     }
+  }
+}
+
+// Tambahkan halaman demonstrasi AnimationDraggableFeedbackDemo
+class AnimationDraggableFeedbackDemo extends StatelessWidget {
+  const AnimationDraggableFeedbackDemo({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Draggable Feedback Animations'),
+        backgroundColor: Colors.deepPurple.shade800,
+      ),
+      backgroundColor: Colors.grey.shade900,
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: DragFeedbackAnim.values.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (context, index) {
+          final type = DragFeedbackAnim.values[index];
+          return Row(
+            children: [
+              Expanded(
+                child: Text(
+                  type.toString().split('.').last,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              // Render feedback animasi langsung, tanpa drag
+              Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade400,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withOpacity(0.3),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Builder(
+                    builder: (context) {
+                      // Simulasikan feedback animasi seolah-olah sedang di-drag
+                      // Biasanya feedback builder butuh context, jadi panggil extension di sini
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.yellow,
+                      ).animationDraggableFeedback(type: type);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
