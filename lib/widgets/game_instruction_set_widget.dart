@@ -1,5 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui';
 
 class GameInstructionSet extends StatefulWidget {
   final String text;
@@ -32,8 +34,75 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
   static const double _kMinFont = 4.0;
   static const int _kMaxLines = 3;
 
+  bool _fontLoaded = false;
+  static bool _bucklaneLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBucklaneFont();
+  }
+
+  Future<void> _loadBucklaneFont() async {
+    // Only load once globally
+    if (_bucklaneLoaded) {
+      setState(() {
+        _fontLoaded = true;
+      });
+      return;
+    }
+
+    try {
+      final loader = FontLoader('Helvetica');
+      loader.addFont(rootBundle
+          .load('packages/helper_animation/assets/fonts/helvetica.ttf'));
+      await loader.load();
+      _bucklaneLoaded = true;
+      if (mounted) {
+        setState(() {
+          _fontLoaded = true;
+        });
+      }
+    } catch (e) {
+      // Fallback to default font if loading fails
+      if (mounted) {
+        setState(() {
+          _fontLoaded = true;
+        });
+      }
+    }
+  }
+
+  String _getFontFamily() {
+    return _bucklaneLoaded ? 'Helvetica' : 'Helvetica';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Show loading indicator while font is loading
+    if (!_fontLoaded) {
+      return Container(
+        width: double.infinity,
+        margin: widget.margin ??
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: widget.padding ??
+            const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: widget.backgroundColor ?? const Color(0xFF285499),
+          borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+            ),
+          ),
+        ),
+      );
+    }
     const bgDefault = Color(0xFF285499);
     const textDefault = Color.fromARGB(166, 216, 248, 255);
     const weightDefault = FontWeight.bold;
@@ -63,7 +132,8 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
               style: TextStyle(
                   fontSize: mid,
                   height: lineHeight,
-                  fontWeight: widget.fontWeight ?? weightDefault),
+                  fontWeight: widget.fontWeight ?? weightDefault,
+                  fontFamily: _getFontFamily()),
             ),
             maxLines: _kMaxLines,
             textDirection: TextDirection.ltr,
@@ -81,7 +151,10 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
         final finalPainter = TextPainter(
           text: TextSpan(
             text: widget.text,
-            style: TextStyle(fontSize: bestFont, height: lineHeight),
+            style: TextStyle(
+                fontSize: bestFont,
+                height: lineHeight,
+                fontFamily: _getFontFamily()),
           ),
           maxLines: _kMaxLines,
           textDirection: TextDirection.ltr,
@@ -119,7 +192,7 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
               fontWeight: widget.fontWeight ?? weightDefault,
               color: widget.textColor ?? textDefault,
               height: 1.2,
-              fontFamily: 'nunito',
+              fontFamily: _getFontFamily(),
             ),
           ),
         );
