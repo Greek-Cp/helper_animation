@@ -4,6 +4,7 @@ import 'package:helper_animation/constants/app_size.dart';
 import 'package:helper_animation/widgets/effect_animation.dart';
 import 'package:helper_animation/widgets/game_instruction_set_widget.dart';
 import 'package:helper_animation_example/animation_demo.dart';
+import 'package:helper_animation_example/font_demo.dart';
 
 void main() {
   runApp(const AnimationDemoApp());
@@ -17,7 +18,7 @@ class AnimationDemoApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Animation Demo',
       debugShowCheckedModeBanner: false,
-      home: AnimationDemo(),
+      home: HomePage(),
     );
   }
 }
@@ -89,8 +90,71 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       children: [
                         GameInstructionSet(
-                          text: "Adjust the arrow to make an angle",
-                          textScale: 0.6,
+                          text: "Helper Animation Demo",
+                          textScale: 0.8,
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Button untuk Animation Demo
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AnimationDemo(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Animation Gallery',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Button untuk Font Demo
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const FontDemo(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Font Demo (Bucklane)',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Bucklane',
+                            ),
+                          ),
                         ),
                       ],
                     ),

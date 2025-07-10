@@ -119,6 +119,7 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
               fontWeight: widget.fontWeight ?? weightDefault,
               color: widget.textColor ?? textDefault,
               height: 1.2,
+              fontFamily: 'nunito',
             ),
           ),
         );

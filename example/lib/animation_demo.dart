@@ -141,7 +141,11 @@ class _AnimationDemoState extends State<AnimationDemo>
       appBar: AppBar(
         title: const Text(
           'Animation Gallery',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Bucklane',
+            fontSize: 24,
+          ),
         )..animationDraggableFeedback(type: _currentTypeDraggable),
         backgroundColor: Colors.deepPurple.shade800,
         elevation: 0,
@@ -183,7 +187,9 @@ class _AnimationDemoState extends State<AnimationDemo>
                 builder: (context) => AlertDialog(
                   title: const Text('How to Use'),
                   content: const Text(
-                      'Explore different animations, customize parameters, and copy the code for use in your projects.'),
+                      'Explore different animations, customize parameters, and copy the code for use in your projects.',
+                      style: TextStyle(fontFamily: 'Bucklane'),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -1439,7 +1445,7 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Mixed Color:', style: TextStyle(color: Colors.white)),
+                  Text('Mixed Color:', style: TextStyle(color: Colors.white, fontFamily: 'Bucklane')),
                   Switch(
                     value: _enableMixedColor,
                     activeColor: _effectColor,
@@ -1454,7 +1460,7 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Color:', style: TextStyle(color: Colors.white)),
+                  Text('Color:', style: TextStyle(color: Colors.white, fontFamily: 'Bucklane')),
                   const SizedBox(width: 8),
                   ...[
                     Colors.red,
@@ -1491,7 +1497,7 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
               ),
               Row(
                 children: [
-                  Text('Duration:', style: TextStyle(color: Colors.white)),
+                  Text('Duration:', style: TextStyle(color: Colors.white, fontFamily: 'Bucklane')),
                   Expanded(
                     child: Slider(
                       value: _durationMs.toDouble(),
