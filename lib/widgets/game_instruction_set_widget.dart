@@ -77,6 +77,11 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
     return _bucklaneLoaded ? 'Helvetica' : 'Helvetica';
   }
 
+  bool _isTablet(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth >= 600; // Tablet threshold
+  }
+
   @override
   Widget build(BuildContext context) {
     // Show loading indicator while font is loading
@@ -108,6 +113,9 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
     const weightDefault = FontWeight.bold;
     const alignDefault = TextAlign.center;
     final borderDefault = BorderRadius.circular(20);
+
+    // Increase text scale by 2x for tablet mode
+    final effectiveTextScale = _isTablet(context) ? widget.textScale * 2.0 : widget.textScale;
 
     final padding = widget.padding ??
         const EdgeInsets.symmetric(vertical: 10, horizontal: 16);
@@ -165,7 +173,7 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
 
         // Ensure minFontSize is a multiple of stepGranularity
         const stepGranularity = 0.5;
-        final baseMinFontSize = 4 * widget.textScale;
+        final baseMinFontSize = 4 * effectiveTextScale;
         final minFontSize =
             (baseMinFontSize / stepGranularity).round() * stepGranularity;
 
@@ -188,7 +196,7 @@ class _GameInstructionSetState extends State<GameInstructionSet> {
             ),
             textAlign: widget.textAlign ?? alignDefault,
             style: TextStyle(
-              fontSize: 22 * widget.textScale,
+              fontSize: 22 * effectiveTextScale,
               fontWeight: widget.fontWeight ?? weightDefault,
               color: widget.textColor ?? textDefault,
               height: 1.2,
