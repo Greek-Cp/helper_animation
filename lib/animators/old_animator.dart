@@ -1225,6 +1225,14 @@ class PixelExplosionAnimator implements EffectAnimator {
   final double saturationBoost;
   // Daftar warna opsional untuk setiap partikel (siklis)
   final List<Color>? particleColors;
+  // Mode: mulai meledak tepat di pinggiran widget dan bergerak keluar
+  final bool spawnAtWidgetEdge;
+  // Jarak keluar dari pinggiran saat meledak (piksel)
+  final double outwardDistance;
+  // Jarak antar partikel di sepanjang sisi (untuk coverage merata)
+  final double edgeSpacing;
+  // Persentase inset ke dalam dari pinggiran (0..0.5). 0.1 = 10% ke dalam
+  final double edgeInsetFraction;
 
   PixelExplosionAnimator({
     this.speed = 1.0,
@@ -1232,68 +1240,175 @@ class PixelExplosionAnimator implements EffectAnimator {
     this.hueTiltRange = .30,
     this.saturationBoost = 1.1,
     this.particleColors,
+    this.spawnAtWidgetEdge = false,
+    this.outwardDistance = 40.0,
+    this.edgeSpacing = 8.0,
+    this.edgeInsetFraction = 0.10,
   });
 
   // ------------------------------ paint
   @override
   void paint(Canvas canvas, Size size, double p, Offset center, Color base,
       {double radiusMultiplier = 1.0, Offset positionOffset = Offset.zero}) {
-    final progress = (p * speed).clamp(0.0, 1.0); // ❶ skala progress
+    final progress = (p * speed).clamp(0.0, 1.0);
 
-    final c = center + positionOffset;
-    final explosionR = size.width * .6 * radiusMultiplier;
-    const pixelCount = 60;
+    // Saat mode perimeter aktif, abaikan positionOffset supaya pusat = widget
+    final c = spawnAtWidgetEdge ? center : (center + positionOffset);
     const baseSize = 3.0;
 
-    for (int i = 0; i < pixelCount; i++) {
-      final rnd = math.Random(i * 97);
-      final angle = rnd.nextDouble() * 2 * math.pi;
-      final speedFactor = .5 + rnd.nextDouble(); // 0.5–1.5
+    // Precompute half sizes untuk jarak ke pinggiran
+    final halfW = size.width / 2;
+    final halfH = size.height / 2;
 
-      double dist, sizePx, opacity;
+    if (spawnAtWidgetEdge) {
+      // Hitung jumlah partikel agar merata di sepanjang perimeter
+      final perimeter = 2 * (size.width + size.height);
+      final count = math.max(8, (perimeter / edgeSpacing).ceil());
+      for (int i = 0; i < count; i++) {
+        final rnd = math.Random(i * 97);
+        final speedFactor = .5 + rnd.nextDouble();
 
-      if (progress < .2) {
-        final t = progress / .2;
-        final startDist = explosionR * (.3 + rnd.nextDouble() * .7);
-        dist = startDist * (1 - t);
-        sizePx = baseSize * (.5 + t * .5);
-        opacity = .3 + t * .7;
-      } else if (progress < .6) {
-        final t = (progress - .2) / .4;
-        dist = explosionR * math.pow(t, 1.5) * speedFactor;
-        sizePx = baseSize * (1 + rnd.nextDouble() * .5);
-        opacity = 1;
-      } else {
-        final t = (progress - .6) / .4;
-        dist = explosionR * (speedFactor + .2 * t * speedFactor);
-        sizePx = baseSize * (1 - t * .5);
-        opacity = 1 - t;
+        // Titik di sepanjang perimeter (berjalan searah jarum jam mulai dari sisi atas kiri→kanan)
+        final s = i * (perimeter / count);
+        double x, y;
+        if (s < size.width) {
+          // Top edge: left → right
+          x = -halfW + s;
+          y = -halfH;
+        } else if (s < size.width + size.height) {
+          // Right edge: top → bottom
+          final t = s - size.width;
+          x = halfW;
+          y = -halfH + t;
+        } else if (s < 2 * size.width + size.height) {
+          // Bottom edge: right → left
+          final t = s - (size.width + size.height);
+          x = halfW - t;
+          y = halfH;
+        } else {
+          // Left edge: bottom → top
+          final t = s - (2 * size.width + size.height);
+          x = -halfW;
+          y = halfH - t;
+        }
+
+        // Arah dari pusat ke titik pinggir
+        final toEdge = Offset(x, y);
+        final len = math.sqrt(toEdge.dx * toEdge.dx + toEdge.dy * toEdge.dy);
+        final dir = len == 0
+            ? const Offset(1, 0)
+            : Offset(toEdge.dx / len, toEdge.dy / len);
+
+        // Fase ukuran & opasitas
+        double sizePx, opacity;
+        double outward;
+        if (progress < .15) {
+          final t = progress / .15;
+          outward =
+              2 + (outwardDistance * radiusMultiplier * .2) * t * speedFactor;
+          sizePx = baseSize * (.6 + .5 * t);
+          opacity = .4 + .6 * t;
+        } else if (progress < .7) {
+          final t = (progress - .15) / .55;
+          double easeOut(double x) => 1 - math.pow(1 - x, 3).toDouble();
+          outward = 2 +
+              (outwardDistance * radiusMultiplier) * easeOut(t) * speedFactor;
+          sizePx = baseSize * (1 + rnd.nextDouble() * .4);
+          opacity = 1.0;
+        } else {
+          final t = (progress - .7) / .3;
+          outward =
+              2 + (outwardDistance * radiusMultiplier) * speedFactor + 10 * t;
+          sizePx = baseSize * (1 - .5 * t);
+          opacity = 1 - t;
+        }
+
+        final edgePos = c + Offset(x, y); // tepat di pinggir
+        // Inset sedikit ke dalam agar tidak terlalu di luar
+        final inset = (edgeInsetFraction.clamp(0.0, 0.45)) * len;
+        final spawnPos = edgePos - dir * inset;
+        final pos = spawnPos + dir * outward; // bergerak keluar
+
+        // Warna
+        final angle = math.atan2(dir.dy, dir.dx);
+        Color col = base;
+        if (particleColors != null && particleColors!.isNotEmpty) {
+          col = particleColors![i % particleColors!.length];
+        } else if (enableHueTilt) {
+          final hsl = HSLColor.fromColor(base);
+          final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
+          col = hsl
+              .withHue((hsl.hue + shift) % 360)
+              .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+              .toColor();
+        }
+        col = col.withOpacity(opacity);
+
+        canvas.drawCircle(pos, sizePx * radiusMultiplier, Paint()..color = col);
+        if (rnd.nextDouble() < .2) {
+          canvas.drawCircle(
+              pos.translate(-sizePx * .25, -sizePx * .25),
+              sizePx * .2,
+              Paint()..color = Colors.white.withOpacity(opacity * .8));
+        }
       }
+    } else {
+      const pixelCount = 60;
+      for (int i = 0; i < pixelCount; i++) {
+        final rnd = math.Random(i * 97);
+        final angle = rnd.nextDouble() * 2 * math.pi;
+        final dir = Offset(math.cos(angle), math.sin(angle));
+        final speedFactor = .5 + rnd.nextDouble();
 
-      final pos = c + Offset(math.cos(angle) * dist, math.sin(angle) * dist);
+        double sizePx, opacity;
+        Offset pos;
+        // Perilaku lama: dari pusat
+        final explosionR = size.width * .6 * radiusMultiplier;
 
-      // warna: gunakan list warna jika disediakan, jika tidak pakai base + hue tilt
-      Color col = base;
-      if (particleColors != null && particleColors!.isNotEmpty) {
-        col = particleColors![i % particleColors!.length];
-      } else if (enableHueTilt) {
-        final hsl = HSLColor.fromColor(base);
-        final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
-        col = hsl
-            .withHue((hsl.hue + shift) % 360)
-            .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
-            .toColor();
-      }
-      col = col.withOpacity(opacity);
+        double dist;
+        if (progress < .2) {
+          final t = progress / .2;
+          final startDist = explosionR * (.3 + rnd.nextDouble() * .7);
+          dist = startDist * (1 - t);
+          sizePx = baseSize * (.5 + t * .5);
+          opacity = .3 + t * .7;
+        } else if (progress < .6) {
+          final t = (progress - .2) / .4;
+          dist = explosionR * math.pow(t, 1.5) * speedFactor;
+          sizePx = baseSize * (1 + rnd.nextDouble() * .5);
+          opacity = 1;
+        } else {
+          final t = (progress - .6) / .4;
+          dist = explosionR * (speedFactor + .2 * t * speedFactor);
+          sizePx = baseSize * (1 - t * .5);
+          opacity = 1 - t;
+        }
 
-      canvas.drawCircle(pos, sizePx * radiusMultiplier, Paint()..color = col);
+        pos = c + dir * dist;
 
-      // highlight 20 %
-      if (rnd.nextDouble() < .2) {
-        canvas.drawCircle(
-            pos.translate(-sizePx * .25, -sizePx * .25),
-            sizePx * .2,
-            Paint()..color = Colors.white.withOpacity(opacity * .8));
+        // warna: gunakan listColor jika ada, selain itu hue tilt opsional
+        Color col = base;
+        if (particleColors != null && particleColors!.isNotEmpty) {
+          col = particleColors![i % particleColors!.length];
+        } else if (enableHueTilt) {
+          final hsl = HSLColor.fromColor(base);
+          final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
+          col = hsl
+              .withHue((hsl.hue + shift) % 360)
+              .withSaturation((hsl.saturation * saturationBoost).clamp(0, 1))
+              .toColor();
+        }
+        col = col.withOpacity(opacity);
+
+        canvas.drawCircle(pos, sizePx * radiusMultiplier, Paint()..color = col);
+
+        // highlight 20 %
+        if (rnd.nextDouble() < .2) {
+          canvas.drawCircle(
+              pos.translate(-sizePx * .25, -sizePx * .25),
+              sizePx * .2,
+              Paint()..color = Colors.white.withOpacity(opacity * .8));
+        }
       }
     }
   }
@@ -1305,11 +1420,16 @@ class PixelExplosionAnimator implements EffectAnimator {
       old.speed != speed ||
       old.enableHueTilt != enableHueTilt ||
       old.hueTiltRange != hueTiltRange ||
-    old.saturationBoost != saturationBoost ||
-    !_listEquals(old.particleColors, particleColors);
+      old.saturationBoost != saturationBoost ||
+      old.spawnAtWidgetEdge != spawnAtWidgetEdge ||
+      old.outwardDistance != outwardDistance ||
+      old.edgeSpacing != edgeSpacing ||
+      old.edgeInsetFraction != edgeInsetFraction ||
+      !_listEquals(old.particleColors, particleColors);
 
   @override
-  AnimationPosition getDefaultPosition() => AnimationPosition.outside;
+  AnimationPosition getDefaultPosition() =>
+      spawnAtWidgetEdge ? AnimationPosition.inside : AnimationPosition.outside;
   @override
   double getDefaultRadiusMultiplier() => 1.2;
   @override

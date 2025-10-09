@@ -120,6 +120,7 @@ class AnimatorFactory {
     AnimationUndergroundType type, {
     bool enableMixedColor = false,
     List<Color>? particleColors,
+    bool spawnAtWidgetEdge = false,
   }) {
     switch (type) {
       case AnimationUndergroundType.perimeterCircleBurstDotRayOut:
@@ -248,6 +249,7 @@ class AnimatorFactory {
         return PixelExplosionAnimator(
           enableHueTilt: enableMixedColor,
           particleColors: particleColors,
+          spawnAtWidgetEdge: spawnAtWidgetEdge,
         );
       case AnimationUndergroundType.dotBurst:
         return DotBurstAnimator(enableHueTilt: enableMixedColor);

@@ -351,114 +351,51 @@ class _AnimationDemoState extends State<AnimationDemo>
               ],
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1,
-                // scrollable
-                physics: const BouncingScrollPhysics(),
-                children: AnimationUndergroundType.values.map((type) {
-                  return Container(
-                    width: 100,
-                    height: 100,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: Draggable(
-                            feedback: Material(
-                              color: Colors.transparent,
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: _effectColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _effectColor.withOpacity(0.5),
-                                      blurRadius: 20,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  type.toString().split('.').last,
-                                  style: TextStyle(
-                                    color: _getContrastColor(_effectColor),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ).animationDraggableFeedback(
-                                type: DragFeedbackAnim.jellyfishBreathing),
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: _effectColor,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _effectColor.withOpacity(0.3),
-                                    blurRadius: 15,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                type.toString().split('.').last,
-                                style: TextStyle(
-                                  color: _getContrastColor(_effectColor),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ).withEffectAnimationNew(
-                            effectColor: _effectColor,
-                            autoAnimate: _autoAnimate,
-                            repeatWhenDrag: _repeatWhenDrag,
-                            radiusMultiplier: _radiusMultiplier,
-                            position: _position,
-                            customOffset: _useCustomOffset
-                                ? Offset(_offsetX, _offsetY)
-                                : Offset.zero,
-                            duration: Duration(milliseconds: _durationMs),
-                            listColor: [
-                              Colors.green,
-                              Colors.blue,
-                              Colors.indigo,
-                              Colors.purple,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          type.toString().split('.').last,
-                          style: TextStyle(
-                            color: _effectColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+            SizedBox(
+              child: Center(
+                child: Container(
+                  width: 200,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: _effectColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _effectColor.withOpacity(0.3),
+                        blurRadius: 15,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    "type.toString().split('.').last",
+                    style: TextStyle(
+                      color: _getContrastColor(_effectColor),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
-                  );
-                }).toList(),
+                    textAlign: TextAlign.center,
+                  ),
+                ).withEffectAnimationNew(
+                  effectColor: _effectColor,
+                  autoAnimate: _autoAnimate,
+                  repeatWhenDrag: _repeatWhenDrag,
+                  radiusMultiplier: _radiusMultiplier,
+                  position: _position,
+                  customOffset: _useCustomOffset
+                      ? Offset(_offsetX, _offsetY)
+                      : Offset.zero,
+                  duration: Duration(milliseconds: _durationMs),
+                  listColor: [
+                    Colors.red,
+                    Colors.orange,
+                    Colors.yellow,
+                  ],
+                ),
               ),
             ),
+
             const SizedBox(height: 12),
             Text(
               _autoAnimate ? 'Auto-animating' : 'Tap to see animation',

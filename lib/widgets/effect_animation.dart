@@ -111,6 +111,8 @@ class EffectAnimation extends StatefulWidget {
   final bool mixedColor;
   // Warna partikel kustom (khususnya untuk PixelExplosionAnimator)
   final List<Color>? particleColors;
+  // Mode perimeter spawn untuk animator yang mendukung (PixelExplosion)
+  final bool spawnAtWidgetEdge;
 
   const EffectAnimation({
     Key? key,
@@ -127,6 +129,7 @@ class EffectAnimation extends StatefulWidget {
     this.mixedColor = false,
     this.touchEnabled = true, // Default-nya aktif
     this.particleColors,
+    this.spawnAtWidgetEdge = false,
   }) : super(key: key);
 
   @override
@@ -160,6 +163,7 @@ class _EffectAnimationState extends State<EffectAnimation>
       widget.animationType,
       enableMixedColor: widget.mixedColor,
       particleColors: widget.particleColors,
+      spawnAtWidgetEdge: widget.spawnAtWidgetEdge,
     );
 
     _controller = AnimationController(
@@ -223,6 +227,7 @@ class _EffectAnimationState extends State<EffectAnimation>
         widget.animationType,
         enableMixedColor: widget.mixedColor,
         particleColors: widget.particleColors,
+        spawnAtWidgetEdge: widget.spawnAtWidgetEdge,
       );
     }
 
@@ -287,6 +292,7 @@ class _EffectAnimationState extends State<EffectAnimation>
       widget.animationType,
       enableMixedColor: widget.mixedColor,
       particleColors: widget.particleColors,
+      spawnAtWidgetEdge: widget.spawnAtWidgetEdge,
     );
 
     _updateChildSize();
@@ -442,13 +448,15 @@ extension EffectAnimationExtension on Widget {
       autoAnimate: autoAnimate,
       animationType: AnimationUndergroundType.pixelExplosion,
       radiusMultiplier: radiusMultiplier,
-      position: position,
+      // Posisi ditentukan otomatis; spawn di pinggiran widget
+      position: AnimationPosition.inside,
       customOffset: customOffset,
       controller: controller,
       touchEnabled: touchEnabled,
       child: this,
       mixedColor: false, // gunakan listColor, bukan hue tilt
       particleColors: listColor,
+      spawnAtWidgetEdge: true,
     );
   }
 }
