@@ -1,29 +1,12 @@
+// ignore_for_file: unused_local_variable, unused_element
 /// Radial burst ala firework, tetapi memakai shape (circle + tail) ──
 /// cocok sebagai penanda netral “item berhasil di‑drop”.
 /// Spiral burst partikel dengan rotasi dan pengurangan ukuran.
-import 'dart:math';
-
-import 'package:helper_animation/animators/new_animator.dart';
-import 'package:helper_animation/animators/new_perimeter_animation.dart';
-import 'package:helper_animation/animators/perimeter_animation.dart';
-
 import '../constants/enums.dart';
-import '../animators/confetti_animator.dart';
 import '../animators/effect_animator.dart';
-import '../animators/firework_animator.dart';
-import '../animators/orbital_animator.dart';
-import 'package:flutter/material.dart';
-import '../animators/ripple_animator.dart';
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
-/// Animator untuk efek whirlpool yang memberikan feedback visual ketika item ditempatkan
-/// Animator untuk efek ray-bubble-pop: titik kecil → pancaran ray → gelembung pecah
-/// dengan warna yang otomatis beradaptasi dari warna widget asli
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'dart:math' show Random, sin, sqrt, pi;
 
 class SpiralExplosionAnimator implements EffectAnimator {
   // ---------- tampilan ----------
@@ -1240,12 +1223,15 @@ class PixelExplosionAnimator implements EffectAnimator {
   final bool enableHueTilt;
   final double hueTiltRange; // 0‑1
   final double saturationBoost;
+  // Daftar warna opsional untuk setiap partikel (siklis)
+  final List<Color>? particleColors;
 
   PixelExplosionAnimator({
     this.speed = 1.0,
     this.enableHueTilt = true,
     this.hueTiltRange = .30,
     this.saturationBoost = 1.1,
+    this.particleColors,
   });
 
   // ------------------------------ paint
@@ -1286,9 +1272,11 @@ class PixelExplosionAnimator implements EffectAnimator {
 
       final pos = c + Offset(math.cos(angle) * dist, math.sin(angle) * dist);
 
-      // warna (HSV shift opsional)
+      // warna: gunakan list warna jika disediakan, jika tidak pakai base + hue tilt
       Color col = base;
-      if (enableHueTilt) {
+      if (particleColors != null && particleColors!.isNotEmpty) {
+        col = particleColors![i % particleColors!.length];
+      } else if (enableHueTilt) {
         final hsl = HSLColor.fromColor(base);
         final shift = (angle / (2 * math.pi)) * 360 * hueTiltRange;
         col = hsl
@@ -1317,7 +1305,8 @@ class PixelExplosionAnimator implements EffectAnimator {
       old.speed != speed ||
       old.enableHueTilt != enableHueTilt ||
       old.hueTiltRange != hueTiltRange ||
-      old.saturationBoost != saturationBoost;
+    old.saturationBoost != saturationBoost ||
+    !_listEquals(old.particleColors, particleColors);
 
   @override
   AnimationPosition getDefaultPosition() => AnimationPosition.outside;
@@ -1325,6 +1314,16 @@ class PixelExplosionAnimator implements EffectAnimator {
   double getDefaultRadiusMultiplier() => 1.2;
   @override
   double getOuterPadding() => 22.0;
+
+  // Helper perbandingan list
+  bool _listEquals<T>(List<T>? a, List<T>? b) {
+    if (a == null) return b == null;
+    if (b == null || a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 }
 
 /// Gelombang pulsa melingkar dengan partikel yang muncul dan menghilang.

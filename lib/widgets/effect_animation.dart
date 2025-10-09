@@ -109,6 +109,8 @@ class EffectAnimation extends StatefulWidget {
   final EffectAnimationController? controller; // Controller baru
   final bool touchEnabled; // Flag untuk mengaktifkan/menonaktifkan respons tap
   final bool mixedColor;
+  // Warna partikel kustom (khususnya untuk PixelExplosionAnimator)
+  final List<Color>? particleColors;
 
   const EffectAnimation({
     Key? key,
@@ -124,6 +126,7 @@ class EffectAnimation extends StatefulWidget {
     this.controller,
     this.mixedColor = false,
     this.touchEnabled = true, // Default-nya aktif
+    this.particleColors,
   }) : super(key: key);
 
   @override
@@ -153,8 +156,11 @@ class _EffectAnimationState extends State<EffectAnimation>
 
   void _initializeAnimation() {
     // Inisialisasi animator berdasarkan type
-    _animator = AnimatorFactory.createAnimator(widget.animationType,
-        enableMixedColor: widget.mixedColor);
+    _animator = AnimatorFactory.createAnimator(
+      widget.animationType,
+      enableMixedColor: widget.mixedColor,
+      particleColors: widget.particleColors,
+    );
 
     _controller = AnimationController(
       vsync: this,
@@ -213,8 +219,11 @@ class _EffectAnimationState extends State<EffectAnimation>
     // Update animator jika jenisnya berubah
     if (oldWidget.animationType != widget.animationType ||
         oldWidget.mixedColor != widget.mixedColor) {
-      _animator = AnimatorFactory.createAnimator(widget.animationType,
-          enableMixedColor: widget.mixedColor);
+      _animator = AnimatorFactory.createAnimator(
+        widget.animationType,
+        enableMixedColor: widget.mixedColor,
+        particleColors: widget.particleColors,
+      );
     }
 
     // Update duration jika berubah
@@ -274,8 +283,11 @@ class _EffectAnimationState extends State<EffectAnimation>
     );
 
     _controller.addStatusListener(_handleAnimationStatus);
-    _animator = AnimatorFactory.createAnimator(widget.animationType,
-        enableMixedColor: widget.mixedColor);
+    _animator = AnimatorFactory.createAnimator(
+      widget.animationType,
+      enableMixedColor: widget.mixedColor,
+      particleColors: widget.particleColors,
+    );
 
     _updateChildSize();
     setState(() {
@@ -407,6 +419,36 @@ extension EffectAnimationExtension on Widget {
       touchEnabled: touchEnabled,
       child: this,
       mixedColor: enableMixedColor,
+    );
+  }
+
+  // Versi baru khusus Pixel Explosion dengan daftar warna per partikel
+  Widget withEffectAnimationNew({
+    required List<Color> listColor,
+    Color effectColor = const Color(0xFF8BB3C5),
+    Duration duration = const Duration(milliseconds: 2400),
+    bool repeatWhenDrag = true,
+    bool autoAnimate = false,
+    double? radiusMultiplier,
+    AnimationPosition position = AnimationPosition.outside,
+    Offset? customOffset,
+    EffectAnimationController? controller,
+    bool touchEnabled = true,
+  }) {
+    return EffectAnimation(
+      effectColor: effectColor,
+      duration: duration,
+      repeatWhenDrag: repeatWhenDrag,
+      autoAnimate: autoAnimate,
+      animationType: AnimationUndergroundType.pixelExplosion,
+      radiusMultiplier: radiusMultiplier,
+      position: position,
+      customOffset: customOffset,
+      controller: controller,
+      touchEnabled: touchEnabled,
+      child: this,
+      mixedColor: false, // gunakan listColor, bukan hue tilt
+      particleColors: listColor,
     );
   }
 }

@@ -1,27 +1,12 @@
-import 'dart:math';
-
 import 'package:helper_animation/animators/new_animator.dart';
 import 'package:helper_animation/animators/new_perimeter_animation.dart';
 import 'package:helper_animation/animators/old_animator.dart';
 import 'package:helper_animation/animators/perimeter_animation.dart';
 
 import '../constants/enums.dart';
-import '../animators/confetti_animator.dart';
 import '../animators/effect_animator.dart';
-import '../animators/firework_animator.dart';
-import '../animators/orbital_animator.dart';
-import 'package:flutter/material.dart';
-import '../animators/ripple_animator.dart';
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
-/// Animator untuk efek whirlpool yang memberikan feedback visual ketika item ditempatkan
-/// Animator untuk efek ray-bubble-pop: titik kecil → pancaran ray → gelembung pecah
-/// dengan warna yang otomatis beradaptasi dari warna widget asli
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
 
 /// Kumpulan fungsi & helper yang dipakai bersama oleh semua animator.
 class AnimationUtils {
@@ -131,8 +116,11 @@ class AnimationUtils {
 }
 
 class AnimatorFactory {
-  static EffectAnimator createAnimator(AnimationUndergroundType type,
-      {bool enableMixedColor = false}) {
+  static EffectAnimator createAnimator(
+    AnimationUndergroundType type, {
+    bool enableMixedColor = false,
+    List<Color>? particleColors,
+  }) {
     switch (type) {
       case AnimationUndergroundType.perimeterCircleBurstDotRayOut:
         return PerimeterCircleBurstDotRayOutAnimator(
@@ -257,7 +245,10 @@ class AnimatorFactory {
       case AnimationUndergroundType.magicDust:
         return MagicDustAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.pixelExplosion:
-        return PixelExplosionAnimator(enableHueTilt: enableMixedColor);
+        return PixelExplosionAnimator(
+          enableHueTilt: enableMixedColor,
+          particleColors: particleColors,
+        );
       case AnimationUndergroundType.dotBurst:
         return DotBurstAnimator(enableHueTilt: enableMixedColor);
       case AnimationUndergroundType.dotAbsorbBurst:

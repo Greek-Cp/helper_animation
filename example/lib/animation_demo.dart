@@ -187,8 +187,8 @@ class _AnimationDemoState extends State<AnimationDemo>
                 builder: (context) => AlertDialog(
                   title: const Text('How to Use'),
                   content: const Text(
-                      'Explore different animations, customize parameters, and copy the code for use in your projects.',
-                      style: TextStyle(fontFamily: 'Bucklane'),
+                    'Explore different animations, customize parameters, and copy the code for use in your projects.',
+                    style: TextStyle(fontFamily: 'Bucklane'),
                   ),
                   actions: [
                     TextButton(
@@ -425,9 +425,7 @@ class _AnimationDemoState extends State<AnimationDemo>
                                 textAlign: TextAlign.center,
                               ),
                             ),
-                          ).withEffectAnimation(
-                            animationType: type,
-                            enableMixedColor: true,
+                          ).withEffectAnimationNew(
                             effectColor: _effectColor,
                             autoAnimate: _autoAnimate,
                             repeatWhenDrag: _repeatWhenDrag,
@@ -437,6 +435,12 @@ class _AnimationDemoState extends State<AnimationDemo>
                                 ? Offset(_offsetX, _offsetY)
                                 : Offset.zero,
                             duration: Duration(milliseconds: _durationMs),
+                            listColor: [
+                              Colors.green,
+                              Colors.blue,
+                              Colors.indigo,
+                              Colors.purple,
+                            ],
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1445,7 +1449,9 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Mixed Color:', style: TextStyle(color: Colors.white, fontFamily: 'Bucklane')),
+                  Text('Mixed Color:',
+                      style: TextStyle(
+                          color: Colors.white, fontFamily: 'Bucklane')),
                   Switch(
                     value: _enableMixedColor,
                     activeColor: _effectColor,
@@ -1460,7 +1466,9 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Color:', style: TextStyle(color: Colors.white, fontFamily: 'Bucklane')),
+                  Text('Color:',
+                      style: TextStyle(
+                          color: Colors.white, fontFamily: 'Bucklane')),
                   const SizedBox(width: 8),
                   ...[
                     Colors.red,
@@ -1497,7 +1505,9 @@ class _MultiDragTargetExampleState extends State<MultiDragTargetExample> {
               ),
               Row(
                 children: [
-                  Text('Duration:', style: TextStyle(color: Colors.white, fontFamily: 'Bucklane')),
+                  Text('Duration:',
+                      style: TextStyle(
+                          color: Colors.white, fontFamily: 'Bucklane')),
                   Expanded(
                     child: Slider(
                       value: _durationMs.toDouble(),
